@@ -1,8 +1,6 @@
 import unittest
-# import downloader as Downloader
-# import 
-# 
 from downloader import Downloader
+from urllib.parse import urlparse  
 
 class DownloaderTest(unittest.TestCase):
     # def __init__(self, *args, **kwargs):
@@ -16,10 +14,30 @@ class DownloaderTest(unittest.TestCase):
 
     # Ok what should we do now?
 
-    def test_checkDownloader(self):
-        downloader = Downloader()
-        # assertEqual(downloader, self.downloader)
+
+    # def test_checkDownloader(self):
+    #     downloader = Downloader()
+    #     # assertEqual(downloader, self.downloader)
+    #     self.assertIsNotNone(downloader)
+
+
+        
+    def test_checkEmail(self):
+        email = '.team_red@hotmail.com'
+        self.assertIsInstance(email, str)
+
+        downloader = Downloader(email=email)
         self.assertIsNotNone(downloader)
+        self.assertIsInstance(downloader.email, str)
+
+        self.assertIn('@', downloader.email)
+        self.assertIn('.', downloader.email.split('@')[-1])
+
+
+    def test_checkDate(self):
+        date = 'date'
+        self.assertIsInstance(date, str)
+
 
         # Should we assertEqual the downloader to the self.downloader?
         # Okay so it seems the problem is that our "assertisNotNone" method doesn't exist - Daniel
