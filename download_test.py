@@ -8,7 +8,7 @@ class DownloaderTest(unittest.TestCase):
     def setUp(self): 
         email = '.team_red@hotmail.com'
         sdate = '2010-12-21' # '2023-02-14'
-        edate = '2023-12-21' # '2023-02-14'
+        edate = '2011-12-21' # '2023-02-14'
         self.downloader = Downloader(email, sdate, edate)
 
     def test_checkEmail(self):
