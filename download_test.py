@@ -1,42 +1,30 @@
 import unittest
 from downloader import Downloader
-from urllib.parse import urlparse  
+from urllib.parse import urlparse
+import datetime
 
 class DownloaderTest(unittest.TestCase):
-    # def __init__(self, *args, **kwargs):
-    #     super(DownloaderTest, self).__init__(*args, **kwargs)
-    #     self.downloader = Downloader()
 
-    
-    # Try catch throw exception (?)
-    # # check if the file exists? - jaedyn
-    # assertEqual(downloader, self.downloader) ?
-
-    # Ok what should we do now?
-
-
-    # def test_checkDownloader(self):
-    #     downloader = Downloader()
-    #     # assertEqual(downloader, self.downloader)
-    #     self.assertIsNotNone(downloader)
-
-
-        
-    def test_checkEmail(self):
+    def setUp(self): 
         email = '.team_red@hotmail.com'
-        self.assertIsInstance(email, str)
+        sdate = '2010-12-21' # '2023-02-14'
+        edate = '2011-12-21' # '2023-02-14'
+        self.downloader = Downloader(email, sdate, edate)
 
-        downloader = Downloader(email=email)
-        self.assertIsNotNone(downloader)
-        self.assertIsInstance(downloader.email, str)
+    def test_checkEmail(self):
+        self.assertIsNotNone(self.downloader)
+        self.assertIsInstance(self.downloader.email, str)
+        self.assertIn('@', self.downloader.email)
+        self.assertIn('.', self.downloader.email.split('@')[-1])
 
-        self.assertIn('@', downloader.email)
-        self.assertIn('.', downloader.email.split('@')[-1])
+    def test_checkstartDate(self):
+        self.assertIsNotNone(self.downloader)
+        self.assertTrue(self.downloader.sdate >= datetime.date(2010, 5, 20))
 
+    def test_checkEndDate(self):
+        self.assertIsNotNone(self.downloader)
+        self.assertTrue(self.downloader.edate > self.downloader.sdate and self.downloader.edate < datetime.date.today() )
 
-    def test_checkDate(self):
-        date = 'date'
-        self.assertIsInstance(date, str)
 
 
         # Should we assertEqual the downloader to the self.downloader?
