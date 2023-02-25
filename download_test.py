@@ -3,17 +3,21 @@ from downloader import Downloader
 from urllib.parse import urlparse
 import datetime
 import re
+import sys, os
 
 class DownloaderTest(unittest.TestCase):
 
     def setUp(self): 
-        email = '.team_red@hotmail.com'
+        email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14'
-        edate = '2011-12-21' # '2023-02-14'
-        wavelength = None
-        instrument = "HMI"
-        cadence = '6h 3m 5s'
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence)
+        edate = '2010-12-22' # '2023-02-14'
+        wavelength = 304
+        instrument = "aia"
+        cadence = '1d'
+        format = 'fits'
+        path ='D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/data2'
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path)
+        self.downloader.assembleJsocString()
 
     def test_checkEmail(self):
         self.assertIsNotNone(self.downloader)
@@ -43,8 +47,27 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.cadence)
         # self.assertTrue(self.downloader.cadence[-1] in self.downloader.validcadence)
         self.assertTrue(self.downloader.cadence.endswith(tuple(self.downloader.validcadence)))
-        m = re.search("\d+\w", self.downloader.cadence)
-        self.assertTrue(m)
+        m = re.search("^\d+[smhd]$", self.downloader.cadence)
+        self.assertIsNotNone(m)
+
+    def test_checkFormats(self):
+        self.assertIsNotNone(self.downloader.format)
+        self.assertTrue(self.downloader.format in self.downloader.validformats)
+
+    def test_path(self):
+        self.assertIsNotNone(self.downloader.path)
+        self.assertTrue(os.path.exists(self.downloader.path))
+
+    def test_jsocString(self):
+        self.assertIsNotNone(self.downloader.jsocString)
+        print(self.downloader.jsocString)
+        query = self.downloader.downloadData()
+        print(query)
+
+
+        
+        
+        
 
 
 
