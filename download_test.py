@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import datetime
 import re
 import sys, os
+import tarfile
 
 class DownloaderTest(unittest.TestCase):
 
@@ -11,12 +12,13 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14'
         edate = '2010-12-22' # '2023-02-14'
-        wavelength = 304
-        instrument = "aia"
-        cadence = '1d'
+        wavelength = 4500
+        instrument = "hmi"
+        cadence = '12h'
         format = 'fits'
         path ='D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/data2'
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path)
+        downloadLimit = 10
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
         self.downloader.assembleJsocString()
 
     def test_checkEmail(self):
@@ -58,14 +60,24 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.path)
         self.assertTrue(os.path.exists(self.downloader.path))
 
-    def test_jsocString(self):
-        self.assertIsNotNone(self.downloader.jsocString)
-        print(self.downloader.jsocString)
-        query = self.downloader.downloadData()
-        print(query)
+    # def test_jsocString(self):
+    #     self.assertIsNotNone(self.downloader.jsocString)
+    #     print(self.downloader.jsocString)
+    #     query = self.downloader.downloadData()
+    #     print(query)
 
+    # def test_queryRequest(self):
+    #     request = self.downloader.createQueryRequest()
+    #     self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
+    #     self.downloader.downloadData()
 
-        
+    def test_untar(self):
+        tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar'))
+        # tar = tarfile.open(self.downloader.path + '/SOC_20230301_080.tar')
+        tar.extractall(os.path.join(self.downloader.path, 'extractedData'))
+        tar.close()
+
+        #JSOC_20230301_080.tar
         
         
 
