@@ -153,4 +153,12 @@ dmypy.json
 cython_debug/
 
 # helio file formats
-*.fits
+*.fits*
+*.jpg*
+*.tar*
+*.html
+*.json
+*.txt
+*.drmsrun
+*.qsub
+
