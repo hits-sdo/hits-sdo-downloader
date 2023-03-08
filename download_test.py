@@ -12,8 +12,8 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14'
         edate = '2010-12-22' # '2023-02-14'
-        wavelength = 4500
-        instrument = "hmi"
+        wavelength = 171
+        instrument = "aia"
         cadence = '12h'
         format = 'fits'
         path ='D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/data2'
@@ -60,38 +60,26 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.path)
         self.assertTrue(os.path.exists(self.downloader.path))
 
-    # def test_jsocString(self):
-    #     self.assertIsNotNone(self.downloader.jsocString)
-    #     print(self.downloader.jsocString)
-    #     query = self.downloader.downloadData()
-    #     print(query)
+    def test_jsocString(self):
+        self.assertIsNotNone(self.downloader.jsocString)
+        print(self.downloader.jsocString)
+        query = self.downloader.downloadData()
+        print(query)
 
-    # def test_queryRequest(self):
-    #     request = self.downloader.createQueryRequest()
-    #     self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
-    #     self.downloader.downloadData()
+    def test_queryRequest(self):
+        request = self.downloader.createQueryRequest()
+        self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
+        self.downloader.downloadData()
 
     def test_untar(self):
-        tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar'))
-        # tar = tarfile.open(self.downloader.path + '/SOC_20230301_080.tar')
-        tar.extractall(os.path.join(self.downloader.path, 'extractedData'))
-        tar.close()
+         tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar')) # Left off here - test failing; no such file or directory + file being downloaded twice.
+         tar.extractall(self.downloader.path)
+         tar.close()
 
-        #JSOC_20230301_080.tar
-        
-        
+    def test_indexing(self):
+        self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
 
-
-        # Should we assertEqual the downloader to the self.downloader?
-        # Okay so it seems the problem is that our "assertisNotNone" method doesn't exist - Daniel
-        # We should make one if it doesnt then (?)
-        # Yes I looked at the docs, the "is" needs to be "Is"
-
-    # Ok since now we have a class that works, maybe start with the download methods? - Jasper
-
-    # def test_checkDownload(self):
-        
  
 if __name__ == "__main__":
     unittest.main()
