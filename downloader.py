@@ -1,11 +1,10 @@
-import urllib
 import datetime
 import os
 import drms
 import tarfile
 
 class Downloader:
-    def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:int=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None):
+    def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:int=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None, fileName = str):
         """
         Initialize a downloader class with paramaters to interface with jsoc http://jsoc.stanford.edu/
 
@@ -43,18 +42,18 @@ class Downloader:
         self.format = format
         self.validformats = ['fits', 'jpg']
         self.path = path
-        self.tarPath = os.path.join(self.path,'untarFolder')
+        # self.tarPath = os.path.join(self.path,'untarFolder')
         self.jsocString = None
         self.largeFileLimit = False
         self.downloadLimit = downloadLimit
-
         self.client = drms.Client(email = self.email, verbose = True)
+
 
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        if not os.path.exists(self.tarPath):
-            os.mkdir(self.tarPath)
+        # if not os.path.exists(self.tarPath):
+        #    os.mkdir(self.tarPath)
 
 
     def assembleJsocString(self):
@@ -79,6 +78,7 @@ class Downloader:
 
         if(self.instrument == 'hmi'):
             self.jsocString = 'hmi.M_720s' + self.jsocString 
+        print(self.jsocString)
 
 
 
@@ -113,28 +113,50 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
-        export_request = self.client.export(self.jsocString, protocol = self.format, method='url-tar')
-        self.export = export_request.download(self.tarPath, 0)
 
-        for row in self.export.rows:
-            print(row['download'])
+        export_request = self.client.export(self.jsocString, protocol = self.format, filenamefmt=None)
+        self.export = export_request.download(self.path, 0)
+        
+        # for row in self.export.rows:
+        #     print(row['download'])
         return self.export
     
 
 
-    def untarDownload(self):
-        '''
-        Untar the downloaded tar file
+    # def untarDownload(self):
+    #     '''
+    #     Untar the downloaded tar file
 
-        Parameters:
-            None
+    #     Parameters:
+    #         None
 
-        Returns:
-            None
-        '''
-        for row in self.export.rows:
-            tar = tarfile.open(row['download']) # edit to a general filename
-            tar.extractall(self.path)
-            tar.close()
-            print(row['download'])
+    #     Returns:
+    #         None
+    #     '''
+    #     for row in self.export.rows:
+    #         tar = tarfile.open(row['download']) # edit to a general filename
+    #         tar.extractall(self.path)
+    #         tar.close()
+    #         print(row['download'])
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

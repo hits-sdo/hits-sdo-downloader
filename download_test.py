@@ -11,7 +11,7 @@ class DownloaderTest(unittest.TestCase):
     def setUp(self): 
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14'
-        edate = '2010-12-22' # '2023-02-14'
+        edate = '2010-12-31' # '2023-02-14'
         wavelength = 171
         instrument = "aia"
         cadence = '12h'
@@ -64,22 +64,28 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.jsocString)
         print(self.downloader.jsocString)
         query = self.downloader.downloadData()
+
+        # File name right now: aia.lev1_euv_12s.2010-12-21T000013Z.171.image_lev1.fits
+        # Need to rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
+        # 20101221_000013_171_AIA.fits
+
         print(query)
 
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest()
         self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
-        self.downloader.downloadData()
 
-    def test_untar(self):
-         tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar')) # Left off here - test failing; no such file or directory + file being downloaded twice.
-         tar.extractall(self.downloader.path)
-         tar.close()
+    # def test_untar(self):
+    #      tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar')) # Left off here - test failing; no such file or directory + file being downloaded twice.
+    #      tar.extractall(self.downloader.path)
+    #      tar.close()
 
     def test_indexing(self):
+        print(os.listdir(self.downloader.path))
         self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
-
+        
+        
  
 if __name__ == "__main__":
     unittest.main()
