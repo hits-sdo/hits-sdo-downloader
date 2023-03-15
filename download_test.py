@@ -64,32 +64,7 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.jsocString)
         print(self.downloader.jsocString)
         query = self.downloader.downloadData()
-
-        # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        # For example: 20101221_000013_171_AIA.fits
-        # Get all files in the directory
-        files = os.listdir(self.downloader.path)
-        for file in files:
-            # Grab 2010-12-21T000013Z from the file name
-            date = file.split('.')[2]
-            # Grab 171 from the file name
-            wavelength = file.split('.')[3]
-            # Grab aia from the file name
-            instrument = file.split('.')[0]
-
-            # Split the date into year, month, day, hour, minute, second
-            year = date[0:4]
-            month = date[5:7]
-            day = date[8:10]
-            hour = date[11:13]
-            minute = date[13:15]
-            second = date[15:17]
-
-            # Rename the file   
-            newFileName = year + month + day + '_' + hour + minute + second + '_' + wavelength + '_' + instrument + '.fits'
-            os.rename(os.path.join(self.downloader.path, file), os.path.join(self.downloader.path, newFileName))
-            print(">>>>>>>>>>>>>>>>>>>>", hour, " ", minute, " ", second)
-
+        self.downloader.renameFilename()
         
 
     def test_queryRequest(self):
@@ -105,7 +80,8 @@ class DownloaderTest(unittest.TestCase):
     #     print(os.listdir(self.downloader.path))
     #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
-        
+    # def test_fileName(self):
+    #     self.assertTrue()    
         
  
 if __name__ == "__main__":

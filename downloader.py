@@ -113,35 +113,49 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
-
+        # File name right now: aia.lev1_euv_12s.2010-12-21T000013Z.171.image_lev1.fits
+        # Need to rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
+        # 20101221_000013_171_AIA.fits
         export_request = self.client.export(self.jsocString, protocol = self.format, filenamefmt=None)
         self.export = export_request.download(self.path, 0)
         
         # for row in self.export.rows:
         #     print(row['download'])
         return self.export
-    
-
-
-    # def untarDownload(self):
-    #     '''
-    #     Untar the downloaded tar file
-
-    #     Parameters:
-    #         None
-
-    #     Returns:
-    #         None
-    #     '''
-    #     for row in self.export.rows:
-    #         tar = tarfile.open(row['download']) # edit to a general filename
-    #         tar.extractall(self.path)
-    #         tar.close()
-    #         print(row['download'])
         
 
+    def renameFilename(self):
+        '''
+        Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
 
+        Parameters:
+            None
+        
+        Returns:
+            None
+        '''
+        files = os.listdir(self.path)
+        for file in files:
+            # Grab 2010-12-21T000013Z from the file name
+            date = file.split('.')[2]
+            # Grab 171 from the file name
+            wavelength = file.split('.')[3]
+            # Grab aia from the file name
+            instrument = file.split('.')[0]
 
+            # Split the date into year, month, day, hour, minute, second
+            year = date[0:4]
+            month = date[5:7]
+            day = date[8:10]
+            hour = date[11:13]
+            minute = date[13:15]
+            second = date[15:17]
+
+            # Rename the file   
+            newFileName = year + month + day + '_' + hour + minute + second + '_' + wavelength + '_' + instrument + '.fits'
+            os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
+            print(">>>>>>>>>>>>>>>>>>>>", hour, " ", minute, " ", second)
+        
 
 
 
