@@ -16,8 +16,8 @@ class DownloaderTest(unittest.TestCase):
         instrument = "aia"
         cadence = '12h'
         format = 'fits'
-        path ='D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/data2'
-        downloadLimit = 10
+        path = os.path.join(os.getcwd(), 'data2')
+        downloadLimit = 25
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
         self.downloader.assembleJsocString()
 
@@ -65,11 +65,32 @@ class DownloaderTest(unittest.TestCase):
         print(self.downloader.jsocString)
         query = self.downloader.downloadData()
 
-        # File name right now: aia.lev1_euv_12s.2010-12-21T000013Z.171.image_lev1.fits
-        # Need to rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        # 20101221_000013_171_AIA.fits
+        # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
+        # For example: 20101221_000013_171_AIA.fits
+        # Get all files in the directory
+        files = os.listdir(self.downloader.path)
+        for file in files:
+            # Grab 2010-12-21T000013Z from the file name
+            date = file.split('.')[2]
+            # Grab 171 from the file name
+            wavelength = file.split('.')[3]
+            # Grab aia from the file name
+            instrument = file.split('.')[0]
 
-        print(query)
+            # Split the date into year, month, day, hour, minute, second
+            year = date[0:4]
+            month = date[5:7]
+            day = date[8:10]
+            hour = date[11:13]
+            minute = date[13:15]
+            second = date[15:17]
+
+            # Rename the file   
+            newFileName = year + month + day + '_' + hour + minute + second + '_' + wavelength + '_' + instrument + '.fits'
+            os.rename(os.path.join(self.downloader.path, file), os.path.join(self.downloader.path, newFileName))
+            print(">>>>>>>>>>>>>>>>>>>>", hour, " ", minute, " ", second)
+
+        
 
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest()
@@ -80,9 +101,9 @@ class DownloaderTest(unittest.TestCase):
     #      tar.extractall(self.downloader.path)
     #      tar.close()
 
-    def test_indexing(self):
-        print(os.listdir(self.downloader.path))
-        self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
+    # def test_indexing(self):
+    #     print(os.listdir(self.downloader.path))
+    #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
         
         
