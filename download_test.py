@@ -9,9 +9,9 @@ import tarfile
 class DownloaderTest(unittest.TestCase):
 
     def setUp(self): 
-        email = 'amunozj@boulder.swri.edu'
-        sdate = '2010-12-21' # '2023-02-14'
-        edate = '2010-12-31' # '2023-02-14'
+        email = 'amunozj@boulder.swri.edu' 
+        sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
+        edate = '2010-12-23' # '2023-02-14' - the end date of the request.
         wavelength = 171
         instrument = "aia"
         cadence = '12h'
@@ -49,7 +49,7 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.cadence)
         # self.assertTrue(self.downloader.cadence[-1] in self.downloader.validcadence)
         self.assertTrue(self.downloader.cadence.endswith(tuple(self.downloader.validcadence)))
-        m = re.search("^\d+[smhd]$", self.downloader.cadence)
+        m = re.search("^\d+[smhd]$", self.downloader.cadence) # == (time) // (s,m,d,h) ??
         self.assertIsNotNone(m)
 
     def test_checkFormats(self):
@@ -62,13 +62,13 @@ class DownloaderTest(unittest.TestCase):
 
     def test_jsocString(self):
         self.assertIsNotNone(self.downloader.jsocString)
-        print(self.downloader.jsocString)
+        print(self.downloader.jsocString) # what does the jsoc string look like?
         query = self.downloader.downloadData()
-        self.downloader.renameFilename()
+        # self.downloader.renameFilename()
         
 
     def test_queryRequest(self):
-        request = self.downloader.createQueryRequest()
+        request = self.downloader.createQueryRequest() # create drms client query request.
         self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
 
     # def test_untar(self):
@@ -86,3 +86,14 @@ class DownloaderTest(unittest.TestCase):
  
 if __name__ == "__main__":
     unittest.main()
+
+# Team Yellow and Orange questions and comments: 
+
+#What is the main goal of team red
+
+#I had a question regarding what the class path looked like regarding the file downloaded
+
+
+# i know that we are working with a pickle'd image for team Yellow -- does this affect the code of 
+# teams red/orange?
+#
