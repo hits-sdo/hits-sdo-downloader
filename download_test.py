@@ -47,7 +47,6 @@ class DownloaderTest(unittest.TestCase):
 
     def test_checkCadence(self):
         self.assertIsNotNone(self.downloader.cadence)
-        # self.assertTrue(self.downloader.cadence[-1] in self.downloader.validcadence)
         self.assertTrue(self.downloader.cadence.endswith(tuple(self.downloader.validcadence)))
         m = re.search("^\d+[smhd]$", self.downloader.cadence) # == (time) // (s,m,d,h) ??
         self.assertIsNotNone(m)
@@ -62,7 +61,10 @@ class DownloaderTest(unittest.TestCase):
 
     def test_jsocString(self):
         self.assertIsNotNone(self.downloader.jsocString)
-        print(self.downloader.jsocString) # what does the jsoc string look like?
+        # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
+        # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
+        # an HMI looks like this:  "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
+        print(self.downloader.jsocString) 
         query = self.downloader.downloadData()
         # self.downloader.renameFilename()
         
@@ -70,11 +72,6 @@ class DownloaderTest(unittest.TestCase):
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest() # create drms client query request.
         self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
-
-    # def test_untar(self):
-    #      tar = tarfile.open(os.path.join(self.downloader.path,'JSOC_20230301_080.tar')) # Left off here - test failing; no such file or directory + file being downloaded twice.
-    #      tar.extractall(self.downloader.path)
-    #      tar.close()
 
     # def test_indexing(self):
     #     print(os.listdir(self.downloader.path))
@@ -87,13 +84,14 @@ class DownloaderTest(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
-# Team Yellow and Orange questions and comments: 
+# Team Yellow and Orange questions and comments:
 
-#What is the main goal of team red
+# What is the main goal of team red
+# - Provide a way to download data using the JSOC API
 
-#I had a question regarding what the class path looked like regarding the file downloaded
+# I had a question regarding what the class path looked like regarding the file downloaded
+# - I think the path is the directory where the file is downloaded to
 
-
-# i know that we are working with a pickle'd image for team Yellow -- does this affect the code of 
+# I know that we are working with a pickle'd image for team Yellow -- does this affect the code of 
 # teams red/orange?
-#
+# - No, it shouldn't affect the code

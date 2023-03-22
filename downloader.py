@@ -17,11 +17,11 @@ class Downloader:
             edate: (str)
                 End date in ISO format (YYYY-MM-DD hh:mm:ss) to define the period of observations to download
             instrument: (str)
-                Instrument to download, currently only HMI and AIA
+                Instrument/module in the SDO spacecraft to download from, currently only HMI and AIA
             wavelength: (int)
-                AIA wavelength of images to download, it is ignored if instrument is HMI
+                Only valid for AIA. EUV wavelength of images to download, it is ignored if instrument is HMI
             cadence: (str)
-                Frequency of the images within the download interval has to be a number and a string character.
+                Frequency at which we want to download images within the download interval. It has to be a number and a string character.
                 "s" for seconds, "m" for minutes, "h" for hours, and "d" for days.
             format: (str)
                 Specify the file type to download, either fits or jpg
@@ -33,27 +33,23 @@ class Downloader:
         self.email = email
         self.sdate = datetime.date.fromisoformat(sdate)
         self.edate = datetime.date.fromisoformat(edate)
-        self.instrument = instrument.lower()    #wat is an instrument? VS waivlength?
-        self.validinstruments = ["aia", "hmi"]  #(hmi - magnetic fields), (aia -the sun in ultraviolet)
-        self.wavelength = wavelength            #what is the wavelength used for? - different colors of ultraviolet - used to look at different levels of the sun's atmosphere
+        self.instrument = instrument.lower()    # Instrument/module in the SDO spacecraft (i.e. hmi, aia)
+        self.validinstruments = ["aia", "hmi"]  #(hmi - magnetic fields), (aia - the sun in ultraviolet)
+        self.wavelength = wavelength            # Only valid for AIA - Different colors of ultraviolet - used to look at different levels of the sun's atmosphere
         self.validwavelengths = [1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131]
-        self.cadence = cadence #what is the cadence of the cadence? - frequency of measurements
-        self.validcadence = ['s', 'm', 'h', 'd']   #what does smhd stand for?  --(seconds, minutes, hours, days) {cadence = 1d}  
+        self.cadence = cadence # Cadence means the frequency at which we want to download images (e.g. one every three ours "3h")
+        self.validcadence = ['s', 'm', 'h', 'd']   # s -> seconds, m -> minutes, h -> hours, d -> days) {cadence = 1d}  
         self.format = format
         self.validformats = ['fits', 'jpg']
         self.path = path
-        # self.tarPath = os.path.join(self.path,'untarFolder')
-        self.jsocString = None  #
-        self.largeFileLimit = False #false, there is no large file limit (limits number of files)
-        self.downloadLimit = downloadLimit # maximum number of files to download.
+        self.jsocString = None # Very specific way of putting together dates and instruments so that we can retrieve from the JSOC
+        self.largeFileLimit = False # False, there is no large file limit (limits number of files)
+        self.downloadLimit = downloadLimit # Maximum number of files to download.
         self.client = drms.Client(email = self.email, verbose = True)
 
-        # if the download path doen't exist, make one.
+        # If the download path doesn't exist, make one.
         if not os.path.exists(self.path):
             os.mkdir(self.path)
-
-        # if not os.path.exists(self.tarPath):
-        #    os.mkdir(self.tarPath)
 
 
     def assembleJsocString(self):
@@ -66,10 +62,9 @@ class Downloader:
         Returns:
             None
         '''
-        self.jsocString = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]"
-        
-        #what is the JsocString used for?
-        # assemble query string for AIA.
+        self.jsocString = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
+        # The jsocString is used to assemble a string for query requests
+        # Assemble query string for AIA.
         if(self.instrument == 'aia'):
             if(self.wavelength in [94, 131, 171, 193, 211, 304, 335]):
                 self.jsocString = 'aia.lev1_euv_12s' + self.jsocString + f"[{self.wavelength}]"
@@ -77,10 +72,9 @@ class Downloader:
                 self.jsocString = 'aia.lev1_uv_24s' + self.jsocString + f"[{self.wavelength}]"
             elif(self.wavelength == 4500):
                 self.jsocString = 'aia.lev1_vis_1h' + self.jsocString + f"[{self.wavelength}]"
-        # assemble qury string for HMI.
+        # Assemble query string for HMI.
         if(self.instrument == 'hmi'):
             self.jsocString = 'hmi.M_720s' + self.jsocString
-        # self.jsocString =  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]"
         print(self.jsocString)
 
 
@@ -115,14 +109,10 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
-        # File name right now: aia.lev1_euv_12s.2010-12-21T000013Z.171.image_lev1.fits
-        # Need to rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        # 20101221_000013_171_AIA.fits
+        # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
         export_request = self.client.export(self.jsocString, protocol = self.format, filenamefmt=None)
         self.export = export_request.download(self.path)
         
-        # for row in self.export.rows:
-        #     print(row['download'])
         return self.export
         
 
@@ -163,27 +153,27 @@ class Downloader:
     
     
    
-    def splitSpikes(self):
-        name = "SpikesFolder"
-        if not os.path.exists(name):
-             os.mkdir(name)
-        #Pattern.fullmatch(string[, 0[, 0]])
+    # def splitSpikes(self):
+    #     name = "SpikesFolder"
+    #     if not os.path.exists(name):
+    #          os.mkdir(name)
         
-        search_string = "spikes"
-        for filename in os.listdir(directory)
-        if search_string in filename:
         
-        # -- finding substring within filenames in a directory --
-        # search_string = "stuff"
-        # for filename in os.listdir(directory):    #iterate through the files in the directory
-        # if search_string in filename: # this will search for the substring "search_string" in the filename string
-        # < do stuff >
+    #     search_string = "spikes"
+    #     for filename in os.listdir(directory)
+    #     if search_string in filename:
         
-        #can also look at find() method
-        #filename.find('spikes') <- yes!
+    #     # -- finding substring within filenames in a directory --
+    #     # search_string = "stuff"
+    #     # for filename in os.listdir(directory):    # iterate through the files in the directory
+    #     # if search_string in filename: # this will search for the substring "search_string" in the filename string
+    #     # < do stuff >
         
-        for file_name in .os.listdir('.'):
-            if file_name.endswith('.txt'):
+    #     #can also look at find() method
+    #     #filename.find('spikes') <- yes!
+        
+    #     for file_name in .os.listdir('.'):
+    #         if file_name.endswith('.txt'):
                 
                 
 
