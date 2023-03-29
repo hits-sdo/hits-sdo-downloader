@@ -18,7 +18,8 @@ class DownloaderTest(unittest.TestCase):
         format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
+        getSpike = True
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit, getSpike)
         self.downloader.assembleJsocString()
 
     def test_checkEmail(self):
@@ -79,6 +80,10 @@ class DownloaderTest(unittest.TestCase):
 
     # def test_fileName(self):
     #     self.assertTrue()    
+
+    def test_spikeOption(self):
+        self.assertIsNotNone(self.downloader.getSpike)
+
         
  
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import drms #data query
 import tarfile
 # use drums.utils? https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html#
 class Downloader:
-    def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:int=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None, fileName = str):
+    def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:int=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None, getSpike:bool = None):
         """
         Initialize a downloader class with paramaters to interface with jsoc http://jsoc.stanford.edu/
 
@@ -29,6 +29,10 @@ class Downloader:
                 Path to download the files to (default is current directory)
             downloadLimit: (int)
                 Limit the number of files to download, if None, all files will be downloaded
+            getSpike: (bool)
+                Flag that specifies whether to download spikes files for AIA. Spikes are hot pixels
+                that are normally removed from AIA images, but the user may want to retrieve them.
+
         """
         self.email = email
         self.sdate = datetime.date.fromisoformat(sdate)
@@ -46,6 +50,7 @@ class Downloader:
         self.largeFileLimit = False # False, there is no large file limit (limits number of files)
         self.downloadLimit = downloadLimit # Maximum number of files to download.
         self.client = drms.Client(email = self.email, verbose = True)
+        self.getSpike = getSpike # Bool switch to download spikes files or not.   Spikes are hot pixels normally removed from AIA, but can be donwloaded if desired
 
         # If the download path doesn't exist, make one.
         if not os.path.exists(self.path):
@@ -72,10 +77,13 @@ class Downloader:
                 self.jsocString = 'aia.lev1_uv_24s' + self.jsocString + f"[{self.wavelength}]"
             elif(self.wavelength == 4500):
                 self.jsocString = 'aia.lev1_vis_1h' + self.jsocString + f"[{self.wavelength}]"
+            # Adding image only to the JSOC string if user doesn't want spikes
+            if (not self.getSpike):
+                self.jsocString = self.jsocString + f"{{image}}"
+
         # Assemble query string for HMI.
         if(self.instrument == 'hmi'):
             self.jsocString = 'hmi.M_720s' + self.jsocString
-        print(self.jsocString)
 
 
 
