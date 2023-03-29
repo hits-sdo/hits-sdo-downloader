@@ -2,6 +2,7 @@ import datetime
 import os   #system files
 import drms #data query
 import tarfile
+import re
 # use drums.utils? https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html#
 class Downloader:
     def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:int=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None, fileName = str):
@@ -75,7 +76,7 @@ class Downloader:
         # Assemble query string for HMI.
         if(self.instrument == 'hmi'):
             self.jsocString = 'hmi.M_720s' + self.jsocString
-        print(self.jsocString)
+        # print(self.jsocString)
 
 
 
@@ -118,7 +119,7 @@ class Downloader:
 
     def renameFilename(self):
         '''
-        Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
+        Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype] 
 
         Parameters:
             None
@@ -126,33 +127,75 @@ class Downloader:
         Returns:
             None
         '''
-        # TO DO: a method for jpg and one for fits?
+
+        # QUESTIONS: What do all resolutions look like in string? Do we use sdate?
+        # https://sdo.gsfc.nasa.gov/data/aiahmi/
+        # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
+        # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
+
+        # aia.lev1_euv_12s.2010-12-21T120013Z.171.image_lev1.fits
+        # or
+        # aia.lev1_euv_12s.2010-12-21T000013Z.171.spikes.fits
+        #  
+        # hmi.m_720s.20101223_000000_TAI.1.magnetogram.fits
+
+        # We're using RegEx:
+        # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
 
         files = os.listdir(self.path)
+
         for file in files:
-            # Grab 2010-12-21T000013Z from the file name
-            date = file.split('.')[2]
-            # Grab 171 from the file name
-            wavelength = file.split('.')[3]
-            # Grab aia from the file name
-            instrument = file.split('.')[0]
 
-            # Split the date into year, month, day, hour, minute, second
-            year = date[0:4]
-            month = date[5:7]
-            day = date[8:10]
-            hour = date[11:13]
-            minute = date[13:15]
-            second = date[15:17]
+            instrument = re.search(r"[a-z]+", file)
+            date = re.search(r"\d+", file)
+            resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+            hhmmss = re.search(r"(_)(\d+)(_)", file)
+            fileType = re.search(r"(jpg|fits)", file)
+            
+            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            # Rename the file   
-            newFileName = year + month + day + '_' + hour + minute + second + '_' + wavelength + '_' + instrument + '.fits'
+            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + resolution.group() + "_" + instrument.group() + '.' + fileType.group()
+            # print(newFileName) # for testing.
+            # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
-            print(">>>>>>>>>>>>>>>>>>>>", hour, " ", minute, " ", second)
 
-    
-    
-   
+            # older method:
+            # instruments = ['aia', 'hmi']
+            # dateRegex = ""
+            # resolutionRegex = ""
+            # instrumentRegex = ""
+            # cadenceRegex = ""
+            # fileTypeRegex = ""
+            # print(instrument.group())
+            # print(date.group())
+            # print(resolution.group())
+            # print(cadence.group())
+            # print(fileType.group())
+
+            # date = file.split('.')[2]
+            # resolution = file.split('.')[3]
+            # resolution = 4096
+        
+            # if self.instrument == 'hmi':
+            #     date = date.split('_')[0]
+            #     newFileName = date + '_' + resolution + '_hmi.' + self.format
+            # elif self.instrument == 'aia':
+            #     year = date[0:4]
+            #     month = date[5:7]
+            #     day = date[8:10]
+            #     hour = date[11:13]
+            #     minute = date[13:15]
+            #     second = date[15:17]
+            #     newFileName = year + month + day + '_' + hour + minute + second + '_' + resolution + '_aia.' + self.format
+            
+            # os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
+            # print (newFileName)   
+            #      
+            # newFileName = ""
+            # print(newFileName)
+            
+
+
     # def splitSpikes(self):
     #     name = "SpikesFolder"
     #     if not os.path.exists(name):

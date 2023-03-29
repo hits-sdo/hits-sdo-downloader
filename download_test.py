@@ -11,11 +11,11 @@ class DownloaderTest(unittest.TestCase):
     def setUp(self): 
         email = 'amunozj@boulder.swri.edu' 
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
-        edate = '2010-12-23' # '2023-02-14' - the end date of the request.
+        edate = '2010-12-22' # '2023-02-14' - the end date of the request.
         wavelength = 171
-        instrument = "aia"
-        cadence = '12h'
-        format = 'fits'
+        instrument = "hmi"
+        cadence = '2h'
+        format = 'jpg'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
@@ -63,24 +63,24 @@ class DownloaderTest(unittest.TestCase):
         self.assertIsNotNone(self.downloader.jsocString)
         # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
-        # an HMI looks like this:  "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
-        print(self.downloader.jsocString) 
+        # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
+        # print(self.downloader.jsocString) 
         query = self.downloader.downloadData()
-        # self.downloader.renameFilename()
+        self.downloader.renameFilename()
         
 
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest() # create drms client query request.
         self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
 
+    def test_renameFileName(self):
+         fileName = self.downloader.renameFilename
+         self.assertTrue(fileName)    
+        
     # def test_indexing(self):
     #     print(os.listdir(self.downloader.path))
     #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
-    # def test_fileName(self):
-    #     self.assertTrue()    
-        
- 
 if __name__ == "__main__":
     unittest.main()
 
