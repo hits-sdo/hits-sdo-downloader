@@ -11,10 +11,10 @@ class DownloaderTest(unittest.TestCase):
     def setUp(self): 
         email = 'amunozj@boulder.swri.edu' 
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
-        edate = '2010-12-23' # '2023-02-14' - the end date of the request.
-        wavelength = 171
+        edate = '2010-12-22' # '2023-02-14' - the end date of the request.
+        wavelength = [171, 131]
         instrument = "aia"
-        cadence = '12h'
+        cadence = '24h'
         format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
@@ -39,8 +39,15 @@ class DownloaderTest(unittest.TestCase):
     def test_checkaiaWavelength(self):
         if(self.downloader.instrument == "aia"):
             self.assertIsNotNone(self.downloader.wavelength)
-            self.assertIsInstance(self.downloader.wavelength, int)
-            self.assertTrue(self.downloader.wavelength in self.downloader.validwavelengths)
+            self.assertIsInstance(self.downloader.wavelength, list)
+            self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
+            self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
+
+            # valid = True
+            # for item in self.downloader.wavelength:  
+            #     if item not in self.downloader.validwavelengths:
+            #         valid = False
+            # self.assertTrue(self.downloader.wavelength in self.downloader.validwavelengths)
     
     def test_checkInstrument(self):
         self.assertIsNotNone(self.downloader.instrument)
@@ -83,6 +90,8 @@ class DownloaderTest(unittest.TestCase):
 
     def test_spikeOption(self):
         self.assertIsNotNone(self.downloader.getSpike)
+
+
 
         
  
