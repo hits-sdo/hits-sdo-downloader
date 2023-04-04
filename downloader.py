@@ -151,10 +151,10 @@ class Downloader:
             resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
             hhmmss = re.search(r"(_)(\d+)(_)", file)
             fileType = re.search(r"(jpg|fits)", file)
-            
+            # wavelength = 
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + resolution.group() + "_" + instrument.group() + '.' + fileType.group()
+            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + instrument.group() + "_" + resolution.group() + '.' + fileType.group()
             # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))

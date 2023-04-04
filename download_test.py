@@ -75,7 +75,7 @@ class DownloaderTest(unittest.TestCase):
 
     def test_renameFileName(self):
          fileName = self.downloader.renameFilename
-         self.assertTrue(fileName)    
+         self.assertTrue(fileName) 
         
     # def test_indexing(self):
     #     print(os.listdir(self.downloader.path))
