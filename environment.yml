@@ -1,0 +1,5 @@
+name: hits-downloader
+channels:
+  - conda-forge
+dependencies:
+  - sunpy=4.1.*

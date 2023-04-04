@@ -4,19 +4,21 @@ from urllib.parse import urlparse
 import datetime
 import re
 import sys, os
+import tarfile
 
 class DownloaderTest(unittest.TestCase):
 
     def setUp(self): 
-        email = 'amunozj@boulder.swri.edu'
-        sdate = '2010-12-21' # '2023-02-14'
-        edate = '2010-12-22' # '2023-02-14'
-        wavelength = 304
-        instrument = "aia"
-        cadence = '1d'
-        format = 'fits'
-        path ='D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/data2'
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path)
+        email = 'amunozj@boulder.swri.edu' 
+        sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
+        edate = '2010-12-22' # '2023-02-14' - the end date of the request.
+        wavelength = 171
+        instrument = "hmi"
+        cadence = '2h'
+        format = 'jpg'
+        path = os.path.join(os.getcwd(), 'data2')
+        downloadLimit = 25
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
         self.downloader.assembleJsocString()
 
     def test_checkEmail(self):
@@ -45,9 +47,8 @@ class DownloaderTest(unittest.TestCase):
 
     def test_checkCadence(self):
         self.assertIsNotNone(self.downloader.cadence)
-        # self.assertTrue(self.downloader.cadence[-1] in self.downloader.validcadence)
         self.assertTrue(self.downloader.cadence.endswith(tuple(self.downloader.validcadence)))
-        m = re.search("^\d+[smhd]$", self.downloader.cadence)
+        m = re.search("^\d+[smhd]$", self.downloader.cadence) # == (time) // (s,m,d,h) ??
         self.assertIsNotNone(m)
 
     def test_checkFormats(self):
@@ -60,26 +61,37 @@ class DownloaderTest(unittest.TestCase):
 
     def test_jsocString(self):
         self.assertIsNotNone(self.downloader.jsocString)
-        print(self.downloader.jsocString)
+        # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
+        # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
+        # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
+        # print(self.downloader.jsocString) 
         query = self.downloader.downloadData()
-        print(query)
-
-
-        
-        
+        self.downloader.renameFilename()
         
 
+    def test_queryRequest(self):
+        request = self.downloader.createQueryRequest() # create drms client query request.
+        self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
 
-
-        # Should we assertEqual the downloader to the self.downloader?
-        # Okay so it seems the problem is that our "assertisNotNone" method doesn't exist - Daniel
-        # We should make one if it doesnt then (?)
-        # Yes I looked at the docs, the "is" needs to be "Is"
-
-    # Ok since now we have a class that works, maybe start with the download methods? - Jasper
-
-    # def test_checkDownload(self):
+    def test_renameFileName(self):
+         fileName = self.downloader.renameFilename
+         self.assertTrue(fileName) 
         
- 
+    # def test_indexing(self):
+    #     print(os.listdir(self.downloader.path))
+    #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
+
 if __name__ == "__main__":
     unittest.main()
+
+# Team Yellow and Orange questions and comments:
+
+# What is the main goal of team red
+# - Provide a way to download data using the JSOC API
+
+# I had a question regarding what the class path looked like regarding the file downloaded
+# - I think the path is the directory where the file is downloaded to
+
+# I know that we are working with a pickle'd image for team Yellow -- does this affect the code of 
+# teams red/orange?
+# - No, it shouldn't affect the code
