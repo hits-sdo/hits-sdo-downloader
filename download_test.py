@@ -12,13 +12,14 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu' 
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = 171
-        instrument = "hmi"
-        cadence = '2h'
-        format = 'jpg'
+        wavelength = [171, 131]
+        instrument = "aia"
+        cadence = '24h'
+        format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit)
+        getSpike = True
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit, getSpike)
         self.downloader.assembleJsocString()
 
     def test_checkEmail(self):
@@ -38,8 +39,15 @@ class DownloaderTest(unittest.TestCase):
     def test_checkaiaWavelength(self):
         if(self.downloader.instrument == "aia"):
             self.assertIsNotNone(self.downloader.wavelength)
-            self.assertIsInstance(self.downloader.wavelength, int)
-            self.assertTrue(self.downloader.wavelength in self.downloader.validwavelengths)
+            self.assertIsInstance(self.downloader.wavelength, list)
+            self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
+            self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
+
+            # valid = True
+            # for item in self.downloader.wavelength:  
+            #     if item not in self.downloader.validwavelengths:
+            #         valid = False
+            # self.assertTrue(self.downloader.wavelength in self.downloader.validwavelengths)
     
     def test_checkInstrument(self):
         self.assertIsNotNone(self.downloader.instrument)
@@ -81,6 +89,13 @@ class DownloaderTest(unittest.TestCase):
     #     print(os.listdir(self.downloader.path))
     #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
 
+    # def test_fileName(self):
+    #     self.assertTrue()    
+
+    def test_spikeOption(self):
+        self.assertIsNotNone(self.downloader.getSpike)
+       
+ 
 if __name__ == "__main__":
     unittest.main()
 
