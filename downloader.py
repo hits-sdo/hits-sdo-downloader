@@ -61,7 +61,7 @@ class Downloader:
             os.mkdir(self.path)
 
 
-    def assembleJsocString(self):
+    def assembleJsocString(self, wavelength:int=None):
         '''
         Given all the parameters, create the jsoc string to query the data
 
@@ -71,24 +71,26 @@ class Downloader:
         Returns:
             None
         '''
-        self.jsocString = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
-        # The jsocString is used to assemble a string for query requests
-        # Assemble query string for AIA.
+        jsocString = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
+
+        # # The jsocString is used to assemble a string for query requests
+        # # Assemble query string for AIA.
         if(self.instrument == 'aia'):
-            if(self.wavelength in [94, 131, 171, 193, 211, 304, 335]):
-                self.jsocString = 'aia.lev1_euv_12s' + self.jsocString + f"[{self.wavelength}]"
-            elif(self.wavelength in [1600, 1700]):
-                self.jsocString = 'aia.lev1_uv_24s' + self.jsocString + f"[{self.wavelength}]"
-            elif(self.wavelength == 4500):
-                self.jsocString = 'aia.lev1_vis_1h' + self.jsocString + f"[{self.wavelength}]"
+            if(wavelength in [94, 131, 171, 193, 211, 304, 335]):
+                jsocString = 'aia.lev1_euv_12s' + jsocString + f"[{wavelength}]"
+            elif(wavelength in [1600, 1700]):
+                jsocString = 'aia.lev1_uv_24s' + jsocString + f"[{wavelength}]"
+            elif(wavelength == 4500):
+                jsocString = 'aia.lev1_vis_1h' + jsocString + f"[{wavelength}]"
             # Adding image only to the JSOC string if user doesn't want spikes
             if (not self.getSpike):
-                self.jsocString = self.jsocString + f"{{image}}"
+                jsocString = jsocString + f"{{image}}"
 
         # Assemble query string for HMI.
         if(self.instrument == 'hmi'):
-            self.jsocString = 'hmi.M_720s' + self.jsocString
+            jsocString = 'hmi.M_720s' + jsocString
             
+        return jsocString
 
     def createQueryRequest(self):
         '''
@@ -103,7 +105,8 @@ class Downloader:
                 - Dates of the files
                 - Number of files
         '''
-        query = self.client.query(self.jsocString, key = 't_rec')
+        jsocString = self.assembleJsocString(self.wavelength[0])
+        query = self.client.query(jsocString, key = 't_rec')
         return query
 
 
@@ -120,8 +123,9 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
+        jsocString = self.assembleJsocString(self.wavelength[0])
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        export_request = self.client.export(self.jsocString, protocol = self.format, filenamefmt=None)
+        export_request = self.client.export(jsocString, protocol = self.format, filenamefmt=None)
         self.export = export_request.download(self.path)
         
         return self.export
@@ -160,7 +164,7 @@ class Downloader:
             date = re.search(r"\d+", file)
             resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
             hhmmss = re.search(r"(_)(\d+)(_)", file)
-            fileType = re.search(r"(jpg|fits)", file)
+            fileType = re.search(r"(jpg|fits)", file) # Spikes files too.
             # wavelength = 
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 

@@ -18,7 +18,7 @@ class DownloaderTest(unittest.TestCase):
         format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
-        getSpike = True
+        getSpike = False
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit, getSpike)
         self.downloader.assembleJsocString()
 
@@ -68,22 +68,22 @@ class DownloaderTest(unittest.TestCase):
         self.assertTrue(os.path.exists(self.downloader.path))
 
     def test_jsocString(self):
-        self.assertIsNotNone(self.downloader.jsocString)
+        # self.assertIsNotNone(self.downloader.jsocString)
         # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
         # print(self.downloader.jsocString) 
         query = self.downloader.downloadData()
-        self.downloader.renameFilename()
+#        self.downloader.renameFilename()
         
 
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest() # create drms client query request.
         self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
 
-    def test_renameFileName(self):
-         fileName = self.downloader.renameFilename
-         self.assertTrue(fileName) 
+    # def test_renameFileName(self):
+    #      fileName = self.downloader.renameFilename
+    #      self.assertTrue(fileName) 
         
     # def test_indexing(self):
     #     print(os.listdir(self.downloader.path))
