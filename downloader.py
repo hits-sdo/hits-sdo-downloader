@@ -58,7 +58,7 @@ class Downloader:
         self.instrument = instrument.lower()    # Instrument/module in the SDO spacecraft (i.e. hmi, aia)
         self.validinstruments = ["aia", "hmi"]  #(hmi - magnetic fields), (aia - the sun in ultraviolet)
         self.wavelength = wavelength            # Only valid for AIA - Different colors of ultraviolet - used to look at different levels of the sun's atmosphere
-        self.validwavelengths = [1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131]
+        self.validwavelengths = [1700, 1600, 304, 171, 193, 211, 335, 94, 131]
         self.cadence = cadence # Cadence means the frequency at which we want to download images (e.g. one every three ours "3h")
         self.validcadence = ['s', 'm', 'h', 'd']   # s -> seconds, m -> minutes, h -> hours, d -> days) {cadence = 1d}  
         self.format = file_format
@@ -94,8 +94,8 @@ class Downloader:
                 self.jsoc_string = 'aia.lev1_euv_12s' + self.jsoc_string + f"[{self.wavelength}]"
             elif self.wavelength in [1600, 1700]:
                 self.jsoc_string = 'aia.lev1_uv_24s' + self.jsoc_string + f"[{self.wavelength}]"
-            elif self.wavelength == 4500:
-                self.jsoc_string = 'aia.lev1_vis_1h' + self.jsoc_string + f"[{self.wavelength}]"
+            # elif self.wavelength == 4500:
+            #     self.jsoc_string = 'aia.lev1_vis_1h' + self.jsoc_string + f"[{self.wavelength}]"
             # Adding image only to the JSOC string if user doesn't want spikes
             if not self.get_spike:
                 self.jsoc_string = self.jsoc_string + "{{image}}"
