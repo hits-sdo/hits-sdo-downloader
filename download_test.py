@@ -73,13 +73,17 @@ class DownloaderTest(unittest.TestCase):
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
         # print(self.downloader.jsocString) 
-        query = self.downloader.downloadData()
-#        self.downloader.renameFilename()
+
+        query = self.downloader.downloadData() 
+        # self.downloader.renameFilename()
         
 
     def test_queryRequest(self):
         request = self.downloader.createQueryRequest() # create drms client query request.
-        self.assertTrue(request.shape[0] < self.downloader.downloadLimit)
+        for i in request:
+            self.assertTrue(i.shape[0] < self.downloader.downloadLimit)
+
+
 
     # def test_renameFileName(self):
     #      fileName = self.downloader.renameFilename

@@ -105,9 +105,14 @@ class Downloader:
                 - Dates of the files
                 - Number of files
         '''
-        jsocString = self.assembleJsocString(self.wavelength[0])
-        query = self.client.query(jsocString, key = 't_rec')
-        return query
+        query_list = []
+
+        for i in range(len(self.wavelength)):
+            jsocString = self.assembleJsocString(self.wavelength[i])
+            query = self.client.query(jsocString, key = 't_rec')
+            query_list.append(query)
+             
+        return query_list
 
 
 
@@ -123,12 +128,15 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
-        jsocString = self.assembleJsocString(self.wavelength[0])
+        export = []
+        #jsocString = self.assembleJsocString(self.wavelength[0])
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        export_request = self.client.export(jsocString, protocol = self.format, filenamefmt=None)
-        self.export = export_request.download(self.path)
+        for i in range(len(self.wavelength)):
+            jsocString = self.assembleJsocString(self.wavelength[i])
+            export_request = self.client.export(jsocString, protocol = self.format, filenamefmt=None)
+            export.append(export_request.download(self.path))
         
-        return self.export
+        return export
         
 
     def renameFilename(self):
