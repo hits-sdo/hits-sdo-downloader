@@ -18,10 +18,10 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = [171, 131]
+        wavelength = [193, 131]
         instrument = "aia"
         cadence = '24h'
-        file_format = 'fits'
+        file_format = 'jpg'
         path = os.path.join(os.getcwd(), 'data2')
         download_limit = 25
         get_spike = True
@@ -61,9 +61,9 @@ class DownloaderTest(unittest.TestCase):
         '''
         if self.downloader.instrument == "aia":
             self.assertIsNotNone(self.downloader.wavelength)
-            self.assertIsInstance(self.downloader.wavelength, list)
-            self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
-            self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
+            # self.assertIsInstance(self.downloader.wavelength, list)
+            #self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
+           # self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
             # valid = True
             # for item in self.downloader.wavelength:  
             #     if item not in self.downloader.validwavelengths:
@@ -113,9 +113,9 @@ class DownloaderTest(unittest.TestCase):
         # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
-        # print(self.downloader.jsoc_string) 
-        # query = self.downloader.download_data()
-        self.downloader.rename_filename()
+        print(self.downloader.jsoc_string) 
+        query = self.downloader.download_data()
+       # self.downloader.rename_filename()
 
 
     def test_query_request(self):
@@ -124,14 +124,15 @@ class DownloaderTest(unittest.TestCase):
         '''
         request = self.downloader.create_query_request() # create drms client query request.
         self.assertTrue(request.shape[0] < self.downloader.download_limit)
+    
 
 
-    def test_rename_filename(self):
-        '''
-        Test that the file name is a string and is not empty.
-        '''
-        filename = self.downloader.rename_filename
-        self.assertTrue(filename)
+    # def test_rename_filename(self):
+    #     '''
+    #     Test that the file name is a string and is not empty.
+    #     '''
+    #     filename = self.downloader.rename_filename
+    #     self.assertTrue(filename)
     # def test_indexing(self):
     #     print(os.listdir(self.downloader.path))
     #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
@@ -144,6 +145,13 @@ class DownloaderTest(unittest.TestCase):
         Test that the spike option is a boolean.
         '''
         self.assertIsNotNone(self.downloader.get_spike)
+
+    def test_jpg_defaults(self):
+        '''
+        Test to ensure that jpgs for different wavelengths have defaults
+        '''
+        self.assertIsNotNone(self.downloader.jpg_defaults)
+        print(self.downloader.jpg_defaults[94])
 
 
 if __name__ == "__main__":

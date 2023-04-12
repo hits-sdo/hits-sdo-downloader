@@ -71,6 +71,17 @@ class Downloader:
         self.get_spike = get_spike # Bool switch to download spikes files or not.   Spikes are hot pixels normally removed from AIA, but can be donwloaded if desired
         self.export = None
 
+        self.jpg_defaults = {94: {'scaling':'LOG', 'min': 1, 'max':240, 'ct': 'aia_94.lut'},
+                             131:{'scaling':'LOG', 'min': 3, 'max':500, 'ct': 'aia_131.lut'},
+                             171:{'scaling':'LOG', 'min': 13, 'max':10000, 'ct': 'aia_171.lut'},
+                             193:{'scaling':'LOG', 'min': 40, 'max':10000, 'ct': 'aia_193.lut'},
+                             211:{'scaling':'LOG', 'min': 20, 'max':4000, 'ct': 'aia_211.lut'},
+                             304:{'scaling':'LOG', 'min': 0.25, 'max':1000, 'ct': 'aia_304.lut'},
+                             335:{'scaling':'LOG', 'min': 0.25, 'max':60, 'ct': 'aia_335.lut'},
+                             1600:{'scaling':'LOG', 'min': 15, 'max':250, 'ct': 'aia_1600.lut'},
+                             1700:{'scaling':'LOG', 'min': 215, 'max':4500, 'ct': 'aia_1700.lut'}
+        }
+
         # If the download path doesn't exist, make one.
         if not os.path.exists(self.path):
             os.mkdir(self.path)
@@ -86,6 +97,7 @@ class Downloader:
         Returns:
             None
         '''
+        self.wavelength = self.wavelength[0]
         self.jsoc_string = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
         # The jsoc_string is used to assemble a string for query requests
         # Assemble query string for AIA.
@@ -136,7 +148,10 @@ class Downloader:
                 Dataframe with the number of files to download
         '''
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        export_request = self.client.export(self.jsoc_string, protocol = self.format, filenamefmt=None)
+        if self.format == 'fits':
+            export_request = self.client.export(self.jsoc_string, protocol = self.format, filenamefmt=None)
+        else:
+            export_request = self.client.export(self.jsoc_string, protocol = self.format, filenamefmt=None, protocol_args = self.jpg_defaults[self.wavelength])
         self.export = export_request.download(self.path)
 
         return self.export
