@@ -12,10 +12,10 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu' 
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = [171, 131]
+        wavelength = [94] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
         instrument = "aia"
         cadence = '24h'
-        format = 'fits'
+        format = 'jpg'
         path = os.path.join(os.getcwd(), 'data2')
         downloadLimit = 25
         getSpike = False
@@ -74,7 +74,7 @@ class DownloaderTest(unittest.TestCase):
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
         # print(self.downloader.jsocString) 
 
-        query = self.downloader.downloadData() 
+        query = self.downloader.downloadData()
         # self.downloader.renameFilename()
         
 

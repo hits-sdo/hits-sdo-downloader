@@ -134,12 +134,15 @@ class Downloader:
         for i in range(len(self.wavelength)):
             jsocString = self.assembleJsocString(self.wavelength[i])
             export_request = self.client.export(jsocString, protocol = self.format, filenamefmt=None)
-            export.append(export_request.download(self.path))
+            export_output = export_request.download(self.path)
+            export.append(export_output)
+            self.renameFilename(export_output)
         
+        print(export[0]["record"])
         return export
         
 
-    def renameFilename(self):
+    def renameFilename(self, export_request):
         '''
         Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype] 
 
@@ -164,19 +167,21 @@ class Downloader:
         # We're using RegEx:
         # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
 
-        files = os.listdir(self.path)
+        files = export_request["download"]
+        records = export_request["record"]
 
-        for file in files:
-
+        for file, record in zip(files, records):
+            file = file.replace("\\", "/").split("/")[-1]
+            print(">>>>>>>>>>", file, record)
             instrument = re.search(r"[a-z]+", file)
             date = re.search(r"\d+", file)
             resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
             hhmmss = re.search(r"(_)(\d+)(_)", file)
             fileType = re.search(r"(jpg|fits)", file) # Spikes files too.
-            # wavelength = 
+            wavelength = re.search(r"(\]\[(\d+))", record)
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + instrument.group() + "_" + resolution.group() + '.' + fileType.group()
+            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + instrument.group() + "_" + resolution.group() + '_' + wavelength.group(2) + '.' + fileType.group()
             # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
