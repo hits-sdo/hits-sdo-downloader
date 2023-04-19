@@ -12,7 +12,7 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu' 
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = [171, 131] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
+        wavelength = [131, 304] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
         instrument = "aia"
         cadence = '24h'
         format = 'jpg'

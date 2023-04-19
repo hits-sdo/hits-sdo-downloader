@@ -172,16 +172,40 @@ class Downloader:
 
         for file, record in zip(files, records): # need to adjust RegEx still.
             file = file.replace("\\", "/").split("/")[-1]
+            # Debug.
             print(">>>>>>>>>>", file, record)
-            instrument = re.search(r"[a-z]+", file)
-            date = re.search(r"\d+", file)
+            # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
+            # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
+
+            # I suggest cleaning this up later by making lambda functions or a dict to map each key in - Jasper
+            # if self.instrument == "aia":
+                # if self.format == "jpg":
+                #     instrument = re.search(r"[a-z]+", file)
+                #     date = re.search(r"\d+", file)
+                #     # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+                #     hhmmss = re.search(r"(_)(\d+\w)(.)", file)
+                #     fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
+                #     wavelength = re.search(r"(\]\[(\d+))", record)
+                # else: # for fits files.
+            instrument = re.search(r"[a-z]+", record)
+            date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", record)     # (\.) ([-|\.])
             # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-            hhmmss = re.search(r"(_)(\d+\w)(.)", file)
+            hhmmss = re.search(r"(\d+):(\d+):(\d+)", record)
+            print('>>>>>>>>>>>>>>>>>>>>>', hhmmss)
             fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
             wavelength = re.search(r"(\]\[(\d+))", record)
-            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            newFileName = date.group() + '_' + hhmmss.group(2) + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + '.' + fileType.group()
+            # else:
+            #     instrument = re.search(r"[a-z]+", file)
+            #     date = re.search(r"\d+", file)
+            #     # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+            #     hhmmss = re.search(r"(_)(\d+\w)(.)", file)
+            #     fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
+
+
+            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
+        
+            newFileName = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + '.' + fileType.group()
             # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
