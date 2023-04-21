@@ -4,9 +4,9 @@ Add docstring of how we use modules
 import datetime
 import os   #system files
 import drms #data query
-import tarfile
 import re
-# use drums.utils? https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html#
+# use drums.utils https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html#
+
 class Downloader:
     def __init__(self, email:str=None, sdate:str=None, edate:str=None, wavelength:list=None, instrument:str = None, cadence:str = None, format:str = None, path:str = None, downloadLimit:int = None, getSpike:bool = None):
         """
@@ -129,7 +129,6 @@ class Downloader:
                 Dataframe with the number of files to download
         '''
         export = []
-        #jsocString = self.assembleJsocString(self.wavelength[0])
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
         for i in range(len(self.wavelength)):
             jsocString = self.assembleJsocString(self.wavelength[i])
@@ -137,7 +136,8 @@ class Downloader:
             export_output = export_request.download(self.path)
             export.append(export_output)
             self.renameFilename(export_output)
-        
+            if self.instrument == 'hmi':
+                break
         print(export[0]["record"])
         return export
         
@@ -177,16 +177,6 @@ class Downloader:
             # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
             # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
 
-            # I suggest cleaning this up later by making lambda functions or a dict to map each key in - Jasper
-            # if self.instrument == "aia":
-                # if self.format == "jpg":
-                #     instrument = re.search(r"[a-z]+", file)
-                #     date = re.search(r"\d+", file)
-                #     # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-                #     hhmmss = re.search(r"(_)(\d+\w)(.)", file)
-                #     fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
-                #     wavelength = re.search(r"(\]\[(\d+))", record)
-                # else: # for fits files.
             instrument = re.search(r"[a-z]+", record)
             date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", record)     # (\.) ([-|\.])
             # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
@@ -195,109 +185,9 @@ class Downloader:
             fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
             wavelength = re.search(r"(\]\[(\d+))", record)
 
-            # else:
-            #     instrument = re.search(r"[a-z]+", file)
-            #     date = re.search(r"\d+", file)
-            #     # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-            #     hhmmss = re.search(r"(_)(\d+\w)(.)", file)
-            #     fileType = re.search(r"(jpg|fits)", file) # Need spikes files too.
-
-
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
         
             newFileName = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + '.' + fileType.group()
             # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
-
-            # older method:
-            # instruments = ['aia', 'hmi']
-            # dateRegex = ""
-            # resolutionRegex = ""
-            # instrumentRegex = ""
-            # cadenceRegex = ""
-            # fileTypeRegex = ""
-            # print(instrument.group())
-            # print(date.group())
-            # print(resolution.group())
-            # print(cadence.group())
-            # print(fileType.group())
-
-            # date = file.split('.')[2]
-            # resolution = file.split('.')[3]
-            # resolution = 4096
-        
-            # if self.instrument == 'hmi':
-            #     date = date.split('_')[0]
-            #     newFileName = date + '_' + resolution + '_hmi.' + self.format
-            # elif self.instrument == 'aia':
-            #     year = date[0:4]
-            #     month = date[5:7]
-            #     day = date[8:10]
-            #     hour = date[11:13]
-            #     minute = date[13:15]
-            #     second = date[15:17]
-            #     newFileName = year + month + day + '_' + hour + minute + second + '_' + resolution + '_aia.' + self.format
-            
-            # os.rename(os.path.join(self.path, file), os.path.join(self.path, newFileName))
-            # print (newFileName)   
-            #      
-            # newFileName = ""
-            # print(newFileName)
-            
-
-
-    # def splitSpikes(self):
-    #     name = "SpikesFolder"
-    #     if not os.path.exists(name):
-    #          os.mkdir(name)
-        
-        
-    #     search_string = "spikes"
-    #     for filename in os.listdir(directory)
-    #     if search_string in filename:
-        
-    #     # -- finding substring within filenames in a directory --
-    #     # search_string = "stuff"
-    #     # for filename in os.listdir(directory):    # iterate through the files in the directory
-    #     # if search_string in filename: # this will search for the substring "search_string" in the filename string
-    #     # < do stuff >
-        
-    #     #can also look at find() method
-    #     #filename.find('spikes') <- yes!
-        
-    #     for file_name in .os.listdir('.'):
-    #         if file_name.endswith('.txt'):
-                
-                
-
-
-        
-
-
-
-
-
- 
-
-
-
- 
-
-
-
-
-
-
-
-'''
-Jacob
-    - downloadLimit has to work with the physical memory limits of the device
-    - Great use of commenting before any code they may have to explain later
-    - camelCase vs snake_case and mixing the two, consider a linter and autoformatter (PyLint & Black)?
-    - Orange team is currently only testing jpeg, so we will need to refactor possibly
-    - Is it possible that there is a scope of time with no photos taken? How would the user know an error hasn't occurred?
-    - What kind of stacking? What kind of algorithm will you use to stack the images? What is the goal of stacking these images?
-        - Is the goal to remove noise?
-
-'''
