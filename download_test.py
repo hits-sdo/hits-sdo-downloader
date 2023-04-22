@@ -1,82 +1,136 @@
-import unittest
-from downloader import Downloader
-import datetime
+"""
+ Module provides regular expression matching
+"""
 import re
+import unittest
+import datetime
 import os
+from downloader import Downloader
 
 class DownloaderTest(unittest.TestCase):
-
-    def setUp(self): 
-        email = 'amunozj@boulder.swri.edu' 
+    '''
+    Test the Downloader class.
+    '''
+    def setUp(self):
+        '''
+        Setup the test environment.
+        '''
+        email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
         wavelength = [131, 304] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
-        instrument = "hmi"
+        instrument = "aia"
         cadence = '24h'
-        format = 'jpg'
+        file_format = 'jpg'
         path = os.path.join(os.getcwd(), 'data2')
-        downloadLimit = 25
-        getSpike = False
-        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, format, path, downloadLimit, getSpike)
-        self.downloader.assembleJsocString()
+        download_limit = 25
+        get_spike = False
+        self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
+        # self.downloader.assemble_jsoc_string()
 
-    def test_checkEmail(self):
+    def test_check_email(self):
+        '''
+        Test that the email is a string and contains an @ and a .
+        '''
         self.assertIsNotNone(self.downloader)
         self.assertIsInstance(self.downloader.email, str)
         self.assertIn('@', self.downloader.email)
         self.assertIn('.', self.downloader.email.split('@')[-1])
 
-    def test_checkstartDate(self):
+
+    def test_check_start_date(self):
+        '''
+        Test that the start date is a date and is not in the future.        
+        '''
         self.assertIsNotNone(self.downloader)
         self.assertTrue(self.downloader.sdate >= datetime.date(2010, 5, 20))
 
-    def test_checkEndDate(self):
+
+    def test_check_end_date(self):
+        '''
+        Test that the end date is a date and is not in the future.
+        '''
         self.assertIsNotNone(self.downloader)
         self.assertTrue(self.downloader.edate > self.downloader.sdate and self.downloader.edate < datetime.date.today() )
 
-    def test_checkaiaWavelength(self):
-        if(self.downloader.instrument == "aia"):
+
+    def test_check_aia_wave_length(self):
+        '''
+        Test that the wavelength is a list and is a valid wavelength.
+        '''
+        if self.downloader.instrument == "aia":
             self.assertIsNotNone(self.downloader.wavelength)
             self.assertIsInstance(self.downloader.wavelength, list)
             self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
             self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
-    
-    def test_checkInstrument(self):
+
+
+    def test_check_instrument(self):
+        '''
+        Test that the instrument is a string and is a valid instrument.
+        '''
         self.assertIsNotNone(self.downloader.instrument)
         self.assertTrue(self.downloader.instrument in self.downloader.validinstruments)
 
-    def test_checkCadence(self):
+
+    def test_check_cadence(self):
+        '''
+        Test that the cadence is a string and is a valid cadence.
+        '''
         self.assertIsNotNone(self.downloader.cadence)
         self.assertTrue(self.downloader.cadence.endswith(tuple(self.downloader.validcadence)))
         m = re.search("^\d+[smhd]$", self.downloader.cadence) # == (time) // (s,m,d,h) ??
         self.assertIsNotNone(m)
 
-    def test_checkFormats(self):
+
+    def test_check_formats(self):
+        '''
+        Test that the format is a string and is a valid format.
+        '''
         self.assertIsNotNone(self.downloader.format)
         self.assertTrue(self.downloader.format in self.downloader.validformats)
 
-    def test_path(self):
+
+    def test_download(self):
+        '''
+        Test that the download has a valid path and works.
+        '''
         self.assertIsNotNone(self.downloader.path)
         self.assertTrue(os.path.exists(self.downloader.path))
 
-    def test_jsocString(self):
-        # self.assertIsNotNone(self.downloader.jsocString)
+
+        '''
+        Test that the jsoc_string is a string and is not empty.
+        '''
+        #self.assertIsNotNone(self.downloader.jsoc_string)
         # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
-
-        query = self.downloader.downloadData()
+        # print(self.downloader.jsoc_string) 
+        query = self.downloader.download_data()
+        # self.downloader.rename_filename()
         
 
     def test_queryRequest(self):
-        request = self.downloader.createQueryRequest() # create drms client query request.
+        request = self.downloader.create_query_request() # create drms client query request.
         for i in request:
-            self.assertTrue(i.shape[0] < self.downloader.downloadLimit)
+            self.assertTrue(i.shape[0] < self.downloader.download_limit)
 
 
-    def test_spikeOption(self):
-        self.assertIsNotNone(self.downloader.getSpike)
-       
- 
+    def test_rename_filename(self):
+        '''
+        Test that the file name is a string and is not empty.
+        '''
+        filename = self.downloader.rename_filename
+        self.assertTrue(filename)
+
+    
+    def test_spike_option(self):
+        '''
+        Test that the spike option is a boolean.
+        '''
+        self.assertIsNotNone(self.downloader.get_spike)
+
+
 if __name__ == "__main__":
     unittest.main()
