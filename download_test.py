@@ -18,7 +18,7 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = [131, 304] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
+        wavelength = [1600, 211] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
         instrument = "aia"
         cadence = '24h'
         file_format = 'jpg'
@@ -130,6 +130,13 @@ class DownloaderTest(unittest.TestCase):
         Test that the spike option is a boolean.
         '''
         self.assertIsNotNone(self.downloader.get_spike)
+
+    def test_jpg_defaults(self):
+        '''
+        Test to ensure that jpgs for different wavelengths have defaults
+        '''
+        self.assertIsNotNone(self.downloader.jpg_defaults)
+        print(self.downloader.jpg_defaults[94])
 
 
 if __name__ == "__main__":
