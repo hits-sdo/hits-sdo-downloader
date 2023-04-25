@@ -64,7 +64,7 @@ class Downloader:
         self.format = file_format
         self.validformats = ['fits', 'jpg']
         self.path = path
-        self.jsoc_string = None # Very specific way of putting together dates and instruments so that we can retrieve from the JSOC
+        # self.jsoc_string = None # Very specific way of putting together dates and instruments so that we can retrieve from the JSOC
         self.large_file_limit = False # False, there is no large file limit (limits number of files)
         self.download_limit = download_limit # Maximum number of files to download.
         self.client = drms.Client(email = self.email, verbose = True)
@@ -87,34 +87,39 @@ class Downloader:
             os.mkdir(self.path)
 
 
-    def assemble_jsoc_string(self):
+    def assemble_jsoc_string(self, wavelength:int=None):
         '''
         Given all the parameters, create the jsoc string to query the data
 
         Parameters:
-            None
+            wavelength:  int
+                AIA wavelength used to generate jsoc string
 
         Returns:
             None
         '''
-        self.wavelength = self.wavelength[0]
-        self.jsoc_string = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
-        # The jsoc_string is used to assemble a string for query requests
-        # Assemble query string for AIA.
-        if self.instrument == 'aia':
-            if self.wavelength in [94, 131, 171, 193, 211, 304, 335]:
-                self.jsoc_string = 'aia.lev1_euv_12s' + self.jsoc_string + f"[{self.wavelength}]"
-            elif self.wavelength in [1600, 1700]:
-                self.jsoc_string = 'aia.lev1_uv_24s' + self.jsoc_string + f"[{self.wavelength}]"
-            # elif self.wavelength == 4500:
-            #     self.jsoc_string = 'aia.lev1_vis_1h' + self.jsoc_string + f"[{self.wavelength}]"
+
+        jsoc_string = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
+
+        # # The jsocString is used to assemble a string for query requests
+        # # Assemble query string for AIA.
+        if(self.instrument == 'aia'):
+            if(wavelength in [94, 131, 171, 193, 211, 304, 335]):
+                jsoc_string = 'aia.lev1_euv_12s' + jsoc_string + f"[{wavelength}]"
+            elif(wavelength in [1600, 1700]):
+                jsoc_string = 'aia.lev1_uv_24s' + jsoc_string + f"[{wavelength}]"
+            elif(wavelength == 4500):
+                jsoc_string = 'aia.lev1_vis_1h' + jsoc_string + f"[{wavelength}]"
             # Adding image only to the JSOC string if user doesn't want spikes
-            if not self.get_spike:
-                self.jsoc_string = self.jsoc_string + "{{image}}"
+            if (not self.get_spike):
+                jsoc_string = jsoc_string + f"{{image}}"
 
         # Assemble query string for HMI.
-        if self.instrument == 'hmi':
-            self.jsoc_string = 'hmi.M_720s' + self.jsoc_string
+        if(self.instrument == 'hmi'):
+            jsoc_string = 'hmi.M_720s' + jsoc_string
+            
+        return jsoc_string
+
 
 
     def create_query_request(self):
@@ -130,8 +135,15 @@ class Downloader:
                 - Dates of the files
                 - Number of files
         '''
-        query = self.client.query(self.jsoc_string, key = 't_rec')
-        return query
+        query_list = []
+
+        for i in range(len(self.wavelength)):
+            jsoc_string = self.assemble_jsoc_string(self.wavelength[i])
+            query = self.client.query(jsoc_string, key = 't_rec')
+            query_list.append(query)
+             
+        return query_list
+
 
 
 
@@ -147,17 +159,26 @@ class Downloader:
             export_request: (panda.df)
                 Dataframe with the number of files to download
         '''
+        export = []
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-        if self.format == 'fits':
-            export_request = self.client.export(self.jsoc_string, protocol = self.format, filenamefmt=None)
-        else:
-            export_request = self.client.export(self.jsoc_string, protocol = self.format, filenamefmt=None, protocol_args = self.jpg_defaults[self.wavelength])
-        self.export = export_request.download(self.path)
+       
+        for i in range(len(self.wavelength)):
+            jsoc_string = self.assemble_jsoc_string(self.wavelength[i])
+            if self.format == 'jpg' and self.instrument == 'aia':
+                export_request = self.client.export(jsoc_string, protocol = self.format, filenamefmt=None, protocol_args = self.jpg_defaults[self.wavelength[i]])
+            else:
+                export_request = self.client.export(jsoc_string, protocol = self.format, filenamefmt=None)
+            export_output = export_request.download(self.path)
+            export.append(export_output)
+            self.rename_filename(export_output)
+            if self.instrument == 'hmi':
+                break
+        # print(export[0]["record"])
+        return export
+        
 
-        return self.export
+    def rename_filename(self, export_request):
 
-
-    def rename_filename(self):
         '''
         Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type] 
 
@@ -182,78 +203,24 @@ class Downloader:
         # We're using RegEx:
         # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
 
-        files = os.listdir(self.path)
+        files = export_request["download"]
+        records = export_request["record"]
 
-        for file in files:
+        for file, record in zip(files, records): # need to adjust RegEx still.
+            file = file.replace("\\", "/").split("/")[-1]
+            # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
+            # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
 
-            instrument = re.search(r"[a-z]+", file)
-            date = re.search(r"\d+", file)
-            resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-            hhmmss = re.search(r"(_)(\d+)(_)", file)
-            file_type = re.search(r"(jpg|fits)", file)
-            # wavelength =
-            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type]
+            instrument = re.search(r"[a-z]+", record)
+            date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", record)     # (\.) ([-|\.])
+            # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+            hhmmss = re.search(r"(\d+):(\d+):(\d+)", record)
+            file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
+            wavelength = re.search(r"(\]\[(\d+))", record)
 
-            new_file_name = date.group() + '_' + hhmmss.group(2) + '_' + instrument.group() + "_" + resolution.group() + '.' + file_type.group()
-            # print(new_file_name) # for testing.
+            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
+        
+            new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + '.' + file_type.group()
+            # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, new_file_name))
-
-            # older method:
-            # instruments = ['aia', 'hmi']
-            # dateRegex = ""
-            # resolutionRegex = ""
-            # instrumentRegex = ""
-            # cadenceRegex = ""
-            # file_typeRegex = ""
-            # print(instrument.group())
-            # print(date.group())
-            # print(resolution.group())
-            # print(cadence.group())
-            # print(file_type.group())
-
-            # date = file.split('.')[2]
-            # resolution = file.split('.')[3]
-            # resolution = 4096
-
-            # if self.instrument == 'hmi':
-            #     date = date.split('_')[0]
-            #     new_file_name = date + '_' + resolution + '_hmi.' + self.format
-            # elif self.instrument == 'aia':
-            #     year = date[0:4]
-            #     month = date[5:7]
-            #     day = date[8:10]
-            #     hour = date[11:13]
-            #     minute = date[13:15]
-            #     second = date[15:17]
-            #     new_file_name = year + month + day + '_' + hour + minute + second + '_' + resolution + '_aia.' + self.format
-
-            # os.rename(os.path.join(self.path, file), os.path.join(self.path, new_file_name))
-            # print (new_file_name)
-            #
-            # new_file_name = ""
-            # print(new_file_name)
-
-
-
-    # def splitSpikes(self):
-    #     name = "SpikesFolder"
-    #     if not os.path.exists(name):
-    #          os.mkdir(name)
-
-
-    #     search_string = "spikes"
-    #     for filename in os.listdir(directory)
-    #     if search_string in filename:
-
-    #     # -- finding substring within filenames in a directory --
-    #     # search_string = "stuff"
-    #     # for filename in os.listdir(directory):    # iterate through the files in the directory
-    #     # if search_string in filename: # this will search for the substring "search_string" in the filename string
-    #     # < do stuff >
-
-    #     #can also look at find() method
-    #     #filename.find('spikes') <- yes!
-
-    #     for file_name in .os.listdir('.'):
-    #         if file_name.endswith('.txt'):

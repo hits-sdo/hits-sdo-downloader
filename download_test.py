@@ -18,16 +18,15 @@ class DownloaderTest(unittest.TestCase):
         email = 'amunozj@boulder.swri.edu'
         sdate = '2010-12-21' # '2023-02-14' - the start date of the request.
         edate = '2010-12-22' # '2023-02-14' - the end date of the request.
-        wavelength = [193, 131]
+        wavelength = [1600, 211] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
         instrument = "aia"
         cadence = '24h'
         file_format = 'jpg'
         path = os.path.join(os.getcwd(), 'data2')
         download_limit = 25
-        get_spike = True
+        get_spike = False
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
-        self.downloader.assemble_jsoc_string()
-
+        # self.downloader.assemble_jsoc_string()
 
     def test_check_email(self):
         '''
@@ -61,14 +60,9 @@ class DownloaderTest(unittest.TestCase):
         '''
         if self.downloader.instrument == "aia":
             self.assertIsNotNone(self.downloader.wavelength)
-            # self.assertIsInstance(self.downloader.wavelength, list)
-            #self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
-           # self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
-            # valid = True
-            # for item in self.downloader.wavelength:  
-            #     if item not in self.downloader.validwavelengths:
-            #         valid = False
-            # self.assertTrue(self.downloader.wavelength in self.downloader.validwavelengths)
+            self.assertIsInstance(self.downloader.wavelength, list)
+            self.assertTrue(set(self.downloader.wavelength).issubset(set(self.downloader.validwavelengths)))
+            self.assertTrue(len(set(self.downloader.wavelength)) == len(self.downloader.wavelength))
 
 
     def test_check_instrument(self):
@@ -97,47 +91,38 @@ class DownloaderTest(unittest.TestCase):
         self.assertTrue(self.downloader.format in self.downloader.validformats)
 
 
-    def test_path(self):
+    def test_download(self):
         '''
-        Test that the path is a string and is a valid path.
+        Test that the download has a valid path and works.
         '''
         self.assertIsNotNone(self.downloader.path)
         self.assertTrue(os.path.exists(self.downloader.path))
 
 
-    def test_jsoc_string(self):
         '''
         Test that the jsoc_string is a string and is not empty.
         '''
-        self.assertIsNotNone(self.downloader.jsoc_string)
+        #self.assertIsNotNone(self.downloader.jsoc_string)
         # A JSOC string is the command used to retrieve data from the Joint Operations Science Center (JSOC) in Stanford 
         # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
         # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
-        print(self.downloader.jsoc_string) 
+        # print(self.downloader.jsoc_string) 
         query = self.downloader.download_data()
-       # self.downloader.rename_filename()
+        # self.downloader.rename_filename()
+        
 
-
-    def test_query_request(self):
-        '''
-        Test that the query request is a string and is not empty.
-        '''
+    def test_queryRequest(self):
         request = self.downloader.create_query_request() # create drms client query request.
-        self.assertTrue(request.shape[0] < self.downloader.download_limit)
-    
+        for i in request:
+            self.assertTrue(i.shape[0] < self.downloader.download_limit)
 
 
-    # def test_rename_filename(self):
-    #     '''
-    #     Test that the file name is a string and is not empty.
-    #     '''
-    #     filename = self.downloader.rename_filename
-    #     self.assertTrue(filename)
-    # def test_indexing(self):
-    #     print(os.listdir(self.downloader.path))
-    #     self.assertTrue(len(os.listdir(self.downloader.path)) > 0) # is not empty
-    # def test_filename(self):
-    #     self.assertTrue()
+    def test_rename_filename(self):
+        '''
+        Test that the file name is a string and is not empty.
+        '''
+        filename = self.downloader.rename_filename
+        self.assertTrue(filename)
 
     
     def test_spike_option(self):
