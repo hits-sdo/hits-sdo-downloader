@@ -21,10 +21,10 @@ class DownloaderTest(unittest.TestCase):
         wavelength = [1600, 211] # valid wl = 1700, 4500, 1600, 304, 171, 193, 211, 335, 94, 131
         instrument = "aia"
         cadence = '24h'
-        file_format = 'jpg'
+        file_format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         download_limit = 25
-        get_spike = False
+        get_spike = True
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
         # self.downloader.assemble_jsoc_string()
 
