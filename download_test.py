@@ -1,5 +1,15 @@
 """
- Module provides regular expression matching
+Module provides regular expression matching
+
+Developed by the 2023 NASA SEARCH Team Red:
+
+Jonathan Vigil - jvigil1738@gmail.com
+David Stone - wovenbone@gmail.com // https://github.com/11001011
+Miguel Tellez - Tellezmiguel38@gmail.com // https://github.com/MiguelTel
+Jasper Doan - jasperdoan@gmail.com
+Daniel Geyfman - dgeyfman0@saddleback.edu
+Andres Muñoz-Jaramillo - andres.munoz@swri.org // https://github.com/amunozj
+
 """
 import re
 import unittest

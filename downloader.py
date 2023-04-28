@@ -1,6 +1,16 @@
 """
 File that contains the Downloader class to download fits and jpgs from Stanford Joint Science
 Operations Center (JSOC) http://jsoc.stanford.edu/
+
+Developed by the 2023 NASA SEARCH Team Red:
+
+Jonathan Vigil - jvigil1738@gmail.com
+David Stone - wovenbone@gmail.com // https://github.com/11001011
+Miguel Tellez - Tellezmiguel38@gmail.com // https://github.com/MiguelTel
+Jasper Doan - jasperdoan@gmail.com
+Daniel Geyfman - dgeyfman0@saddleback.edu
+Andres Muñoz-Jaramillo - andres.munoz@swri.org // https://github.com/amunozj
+
 """
 import datetime
 import os
@@ -219,11 +229,11 @@ class Downloader:
             hhmmss = re.search(r"(\d+):(\d+):(\d+)", record)
             file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
             wavelength = re.search(r"(\]\[(\d+))", record)
+
             spikes = ""
             if re.search("spikes", file):
                 spikes = ".spikes"
             
-
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
             new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + spikes + '.' + file_type.group()
@@ -236,6 +246,9 @@ def parse_args(args=None):
     """
     Parses command line arguments to script. Sets up argument for which 
     dataset to label.
+
+    Example:
+    python downloader.py --email email@email.edu -sd 2010-12-21 -ed 2010-12-22 -i aia -wl 171 131 -c 24h -f jpg -p "D:\Mis Documentos\AAResearch\SEARCH\hits-sdo-downloader\command_test" -dlim 3
 
     Parameters:
         args (list):    defaults to parsing any command line arguments
