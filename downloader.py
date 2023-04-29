@@ -1,10 +1,21 @@
 """
 File that contains the Downloader class to download fits and jpgs from Stanford Joint Science
 Operations Center (JSOC) http://jsoc.stanford.edu/
+
+Developed by the 2023 NASA SEARCH Team Red:
+
+Jonathan Vigil - jvigil1738@gmail.com
+David Stone - wovenbone@gmail.com // https://github.com/11001011
+Miguel Tellez - Tellezmiguel38@gmail.com // https://github.com/MiguelTel
+Jasper Doan - jasperdoan@gmail.com
+Daniel Geyfman - dgeyfman0@saddleback.edu
+Andres Muñoz-Jaramillo - andres.munoz@swri.org // https://github.com/amunozj
+
 """
 import datetime
 import os
 import re
+import argparse
 import drms  # Module to interface with JSOC https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html
 
 class Downloader:
@@ -107,21 +118,21 @@ class Downloader:
 
         # # The jsocString is used to assemble a string for query requests
         # # Assemble query string for AIA.
-        if(self.instrument == 'aia'):
-            if(wavelength in [94, 131, 171, 193, 211, 304, 335]):
+        if self.instrument == 'aia':
+            if wavelength in [94, 131, 171, 193, 211, 304, 335]:
                 jsoc_string = 'aia.lev1_euv_12s' + jsoc_string + f"[{wavelength}]"
-            elif(wavelength in [1600, 1700]):
+            elif wavelength in [1600, 1700] :
                 jsoc_string = 'aia.lev1_uv_24s' + jsoc_string + f"[{wavelength}]"
-            elif(wavelength == 4500):
+            elif wavelength == 4500:
                 jsoc_string = 'aia.lev1_vis_1h' + jsoc_string + f"[{wavelength}]"
             # Adding image only to the JSOC string if user doesn't want spikes
-            if (not self.get_spike):
+            if not self.get_spike:
                 jsoc_string = jsoc_string + f"{{image}}"
 
         # Assemble query string for HMI.
-        if(self.instrument == 'hmi'):
+        if self.instrument == 'hmi':
             jsoc_string = 'hmi.M_720s' + jsoc_string
-            
+
         return jsoc_string
 
 
@@ -141,15 +152,12 @@ class Downloader:
         '''
         query_list = []
 
-        for i in range(len(self.wavelength)):
-            jsoc_string = self.assemble_jsoc_string(self.wavelength[i])
+        for wavelength in self.wavelength:
+            jsoc_string = self.assemble_jsoc_string(wavelength)
             query = self.client.query(jsoc_string, key = 't_rec')
             query_list.append(query)
-             
+
         return query_list
-
-
-
 
 
     def download_data(self):
@@ -165,13 +173,18 @@ class Downloader:
         '''
         export = []
         # Renames file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.fits
-       
-        for i in range(len(self.wavelength)):
-            jsoc_string = self.assemble_jsoc_string(self.wavelength[i])
+
+        for wavelength in self.wavelength:
+            jsoc_string = self.assemble_jsoc_string(wavelength)
             if self.format == 'jpg' and self.instrument == 'aia':
-                export_request = self.client.export(jsoc_string, protocol = self.format, filenamefmt=None, protocol_args = self.jpg_defaults[self.wavelength[i]])
+                export_request = self.client.export(jsoc_string,
+                                                    protocol = self.format,
+                                                    filenamefmt=None,
+                                                    protocol_args = self.jpg_defaults[wavelength])
             else:
-                export_request = self.client.export(jsoc_string, protocol = self.format, filenamefmt=None)
+                export_request = self.client.export(jsoc_string,
+                                                    protocol = self.format,
+                                                    filenamefmt=None)
             export_output = export_request.download(self.path)
             export.append(export_output)
             self.rename_filename(export_output)
@@ -179,10 +192,9 @@ class Downloader:
                 break
         # print(export[0]["record"])
         return export
-        
+
 
     def rename_filename(self, export_request):
-
         '''
         Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type] 
 
@@ -201,7 +213,7 @@ class Downloader:
         # aia.lev1_euv_12s.2010-12-21T120013Z.171.image_lev1.fits
         # or
         # aia.lev1_euv_12s.2010-12-21T000013Z.171.spikes.fits
-        #  
+        #
         # hmi.m_720s.20101223_000000_TAI.1.magnetogram.fits
 
         # We're using RegEx:
@@ -222,9 +234,94 @@ class Downloader:
             file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
             wavelength = re.search(r"(\]\[(\d+))", record)
 
+            spikes = ""
+            if re.search("spikes", file):
+                spikes = ".spikes"
+            
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
-        
-            new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + '.' + file_type.group()
+
+            new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + spikes + '.' + file_type.group()
             # print(newFileName) # for testing.
             # rename file.
             os.rename(os.path.join(self.path, file), os.path.join(self.path, new_file_name))
+
+
+def parse_args(args=None):
+    """
+    Parses command line arguments to script. Sets up argument for which 
+    dataset to label.
+
+    Example:
+    python downloader.py --email email@email.edu -sd 2010-12-21 -ed 2010-12-22 -i aia -wl 171 131 -c 24h -f jpg -p "D:\Mis Documentos\AAResearch\SEARCH\hits-sdo-downloader\command_test" -dlim 3
+
+    Parameters:
+        args (list):    defaults to parsing any command line arguments
+    
+    Returns:
+        parser args:    Namespace from argparse
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--email',
+                        type=str,
+                        help='JSOC registered email to enable dowloading of fits and jpg images'
+                        )
+    parser.add_argument('-sd','--sdate',
+                        type=str,
+                        help='Starting date in ISO format (YYYY-MM-DD hh:mm:ss) to define the period of observations to download. Has to be after May 25th, 2010'
+                        )
+    parser.add_argument('-ed','--edate',
+                        type=str,
+                        help='End date in ISO format (YYYY-MM-DD hh:mm:ss) to define the period of observations to download'
+                        )
+    parser.add_argument('-i','--instrument',
+                        type=str,
+                        help='Instrument to download, currently only HMI and AIA'
+                        )
+    parser.add_argument('-wl','--wavelength',
+                        nargs='+',
+                        type=int,
+                        help='AIA wavelength of images to download, it is ignored if instrument is HMI'
+                        )
+    parser.add_argument('-c','--cadence',
+                        type=str,
+                        help='Frequency of the images within the download interval has to be a number and a string character. "s" for seconds, "m" for minutes, "h" for hours, and "d" for days.'
+                        )
+    parser.add_argument('-f','--format',
+                        type=str,
+                        help='Specify the file type to download, either fits or jpg'
+                        )
+    parser.add_argument('-p','--path',
+                        type=str,
+                        help='Path to download the files to (default is current directory)'
+                        )
+    parser.add_argument('-dlim','--download_limit',
+                        type=int,
+                        default = 1000,
+                        help='Limit the number of files to download, defaults to 1000'
+                        )
+
+    return parser.parse_args(args)
+
+
+if __name__=="__main__":
+    parser = parse_args()
+    downloader = Downloader(parser.email,
+                            parser.sdate,
+                            parser.edate,
+                            parser.wavelength,
+                            parser.instrument,
+                            parser.cadence,
+                            parser.format,
+                            parser.path,
+                            parser.download_limit)
+
+    request = downloader.create_query_request() # create drms client query request.
+    is_larger = False
+    for i in request:
+        if i.shape[0] > downloader.download_limit:
+            print(f'Download request of {i.shape[0]} files is larger than download limit of {downloader.download_limit} files')
+            is_larger = True
+            break
+
+    if not is_larger:
+        downloader.download_data()
