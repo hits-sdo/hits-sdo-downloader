@@ -34,7 +34,7 @@ class DownloaderTest(unittest.TestCase):
         file_format = 'fits'
         path = os.path.join(os.getcwd(), 'data2')
         download_limit = 25
-        get_spike = True
+        get_spike = False
         self.downloader = Downloader(email, sdate, edate, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
         # self.downloader.assemble_jsoc_string()
 

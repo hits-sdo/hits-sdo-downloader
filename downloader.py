@@ -64,8 +64,12 @@ class Downloader:
                  get_spike:bool = None):
         
         self.email = email
-        self.sdate = datetime.date.fromisoformat(sdate)
-        self.edate = datetime.date.fromisoformat(edate)
+        if isinstance(sdate, str):
+            self.sdate = datetime.date.fromisoformat(sdate)
+            self.edate = datetime.date.fromisoformat(edate)
+        else:
+            self.sdate = sdate
+            self.edate = edate
         self.instrument = instrument.lower()    # Instrument/module in the SDO spacecraft (i.e. hmi, aia)
         self.validinstruments = ["aia", "hmi"]  #(hmi - magnetic fields), (aia - the sun in ultraviolet)
         self.wavelength = wavelength            # Only valid for AIA - Different colors of ultraviolet - used to look at different levels of the sun's atmosphere
