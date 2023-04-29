@@ -3,6 +3,7 @@ import datetime
 import os
 from downloader import Downloader
 from PIL import Image
+import utils.redirect as rd
 
 
 
@@ -54,12 +55,27 @@ def get_instrument():
     return instrument 
 
 def choose_cadence():
-    cadence = st.sidebar.selectbox("Cadence", ["h", "m", "d", "s"])
-    return cadence
+    layout = st.sidebar.columns([2,1])
+    with layout[0]:
+        cadence_frequency = st.number_input("Cadence Frequency: ")
+    with layout[-1]:
+        cadence_unit = st.selectbox("Cadence",  ["h", "m", "d", "s"])   
+    return str(cadence_frequency) + cadence_unit 
+
+def get_limit():
+    download_limit = st.number_input("Download Limit: ", value = 25)
+    return download_limit
+
+# def choose_cadence_unit():
+#     cadence = st.sidebar.selectbox("Cadence Unit", ["h", "m", "d", "s"])
+#     return cadence
 
 def choose_spikes():
-    spikes = st.sidebar.selectbox("Include spikes?", ["YES", "NO"])
-    return spikes
+    spikes = st.sidebar.selectbox("Include spikes?", ["Yes", "No"])
+    if spikes == 'Yes':
+        return True
+    else:
+        return False
     
 # ==============================================================================================================
 
@@ -68,18 +84,38 @@ def choose_spikes():
 def main():
     st.title("HITS SDO Downloader")
     st.write("This app downloads HMI Intensitygram and Magnetogram images from the SDO website.")
-
+    path = os.path.join(os.getcwd(), 'data2')
+    download_limit = get_limit()
     # Get user input
     start_date, end_date = get_date_range()
     email = get_email()
     wavelength = get_wavelength()
-    file_type = get_file_type()
+    file_format = get_file_type()
     instrument = get_instrument()
     cadence = choose_cadence()
-    spikes = choose_spikes()
+    get_spike = choose_spikes()
+
+
+    run_button = st.button('Run')
+
+    st.text("output")
+    so=st.empty()
+    with rd.stdout(to=so):
+        if run_button:
+            downloader = Downloader(email, start_date, end_date, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
     
-    st.write("Your email is: ", email)
-    st.write("💪😎 We be balling 🏀⛹️")
+            st.write("💪😎 We be balling 🏀⛹️")
+
+            request = downloader.create_query_request() # create drms client query request.
+            is_larger = False
+            for i in request:
+                if i.shape[0] > downloader.download_limit:
+                    print(f'Download request of {i.shape[0]} files is larger than download limit of {downloader.download_limit} files')
+                    is_larger = True
+                    break
+
+            if not is_larger:
+                downloader.download_data()        
 
 
     # https://discuss.streamlit.io/t/multiple-images-along-the-same-row/118/7
