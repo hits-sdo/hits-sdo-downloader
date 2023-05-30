@@ -84,7 +84,7 @@ def choose_spikes():
 def main():
     st.title("HITS SDO Downloader")
     st.write("This app downloads HMI Intensitygram and Magnetogram images from the SDO website.")
-    path = os.path.join('/Users/dgeyfman/Documents/VSCodeProjects/hits-sdo-downloader/data2')
+    path = os.path.join(os.getcwd(), 'data2')
     download_limit = get_limit()
     # Get user input
     start_date, end_date = get_date_range()
