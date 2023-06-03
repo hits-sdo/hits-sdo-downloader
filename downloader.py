@@ -113,26 +113,32 @@ class Downloader:
         Returns:
             None
         '''
-
-        jsoc_string = f"[{self.sdate.isoformat()}-{self.edate.isoformat()}@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
+        # The UI returns 1234.0h instead of 1234h, so this fixes that by replacing a substring '.0' to ''
+        if '.' in self.cadence:
+            self.cadence = self.cadence.replace('.0', '')
+        
+        # Changed the format of the jsoc string
+        jsoc_string = f"[{self.sdate.isoformat()}/{(self.edate-self.sdate).days+1}d@{self.cadence}]" # used to assemble the query string that will be sent to the JSOC database
 
         # # The jsocString is used to assemble a string for query requests
         # # Assemble query string for AIA.
         if self.instrument == 'aia':
-            if wavelength in [94, 131, 171, 193, 211, 304, 335]:
+            if int(wavelength) in [94, 131, 171, 193, 211, 304, 335]:
                 jsoc_string = 'aia.lev1_euv_12s' + jsoc_string + f"[{wavelength}]"
-            elif wavelength in [1600, 1700] :
+            elif int(wavelength) in [1600, 1700] :
                 jsoc_string = 'aia.lev1_uv_24s' + jsoc_string + f"[{wavelength}]"
-            elif wavelength == 4500:
+            elif int(wavelength) == 4500:
                 jsoc_string = 'aia.lev1_vis_1h' + jsoc_string + f"[{wavelength}]"
             # Adding image only to the JSOC string if user doesn't want spikes
             if not self.get_spike:
-                jsoc_string = jsoc_string + f"{{image}}"
+                jsoc_string = jsoc_string + "{image}"
 
         # Assemble query string for HMI.
         if self.instrument == 'hmi':
             jsoc_string = 'hmi.M_720s' + jsoc_string
-
+            # Adding image only to the JSOC string if user doesn't want spikes
+            if not self.get_spike:
+                jsoc_string = jsoc_string + "{image}"
         return jsoc_string
 
 
@@ -187,10 +193,9 @@ class Downloader:
                                                     filenamefmt=None)
             export_output = export_request.download(self.path)
             export.append(export_output)
-            self.rename_filename(export_output)
             if self.instrument == 'hmi':
                 break
-        # print(export[0]["record"])
+            self.rename_filename(export_output)
         return export
 
 

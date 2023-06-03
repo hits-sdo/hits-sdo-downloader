@@ -89,7 +89,8 @@ def main():
     # Get user input
     start_date, end_date = get_date_range()
     email = get_email()
-    wavelength = get_wavelength()
+    # int() is used because the UI returns a string by default
+    wavelength = int(get_wavelength())
     file_format = get_file_type()
     instrument = get_instrument()
     cadence = choose_cadence()
@@ -102,7 +103,7 @@ def main():
     so=st.empty()
     with rd.stdout(to=so):
         if run_button:
-            downloader = Downloader(email, start_date, end_date, wavelength, instrument, cadence, file_format, path, download_limit, get_spike)
+            downloader = Downloader(email, start_date, end_date, [wavelength], instrument, cadence, file_format, path, download_limit, get_spike)
     
             st.write("💪😎 We be balling 🏀⛹️")
 
@@ -115,7 +116,7 @@ def main():
                     break
 
             if not is_larger:
-                downloader.download_data()        
+                downloader.download_data()
 
 
     # https://discuss.streamlit.io/t/multiple-images-along-the-same-row/118/7
