@@ -15,7 +15,7 @@ import re
 import unittest
 import datetime
 import os
-from downloader import Downloader
+from search_download.downloader import Downloader
 
 class DownloaderTest(unittest.TestCase):
     '''

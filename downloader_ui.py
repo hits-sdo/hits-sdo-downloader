@@ -1,9 +1,9 @@
 import streamlit as st
 import datetime
 import os
-from downloader import Downloader
+from search_download.downloader import Downloader
 from PIL import Image
-import utils.redirect as rd
+import search_download.utils.redirect as rd
 
 
 

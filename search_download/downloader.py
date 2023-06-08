@@ -67,8 +67,7 @@ class Downloader:
                  path:str = None,
                  download_limit:int = None,
                  get_spike:bool = None,
-                 grayscale:bool = False,
-                 multiwavelength:bool = False):
+                 grayscale:bool = False):
         
         self.email = email
         if isinstance(sdate, str):
@@ -354,8 +353,7 @@ if __name__=="__main__":
                             parser.format,
                             parser.path,
                             parser.download_limit,
-                            grayscale=parser.grayscale,
-                            multiwavelength=parser.multiwavelength
+                            grayscale=parser.grayscale
                             )
 
     # request = downloader.create_query_request() # create drms client query request.
