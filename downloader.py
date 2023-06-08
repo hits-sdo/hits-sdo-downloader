@@ -204,23 +204,26 @@ class Downloader:
                                                     protocol = self.format,
                                                     method='url-tar')
             export_request.wait()
-            export_output = export_request.download(self.path)
+
+            # If the download path doesn't exist, make one.
+            if not os.path.exists(os.path.join(self.path, str(wavelength)).replace('\\','/')):
+                os.mkdir(os.path.join(self.path, str(wavelength)).replace('\\','/'))            
+            export_output = export_request.download(os.path.join(self.path, str(wavelength)).replace('\\','/'))
 
             if self.format == 'fits':
                 for f in export_output.download:
-                    shutil.unpack_archive(f, self.path)
+                    shutil.unpack_archive(f, os.path.join(self.path, str(wavelength)).replace('\\','/'))
                     os.remove(f)
             else:
                 export.append(export_output)
 
-            # if self.instrument == 'hmi':
-            #     break
-                self.rename_filename(export_output)
+            files = glob.glob(os.path.join(self.path, str(wavelength), f'*.{self.format}').replace('\\','/'))
+            self.rename_filename(files, wavelength)
 
         return export
 
 
-    def rename_filename(self, export_request):
+    def rename_filename(self, files, wavelength):
         '''
         Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type] 
 
@@ -245,20 +248,21 @@ class Downloader:
         # We're using RegEx:
         # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
 
-        files = export_request["download"]
-        records = export_request["record"]
-
-        for file, record in zip(files, records): # need to adjust RegEx still.
+        for file in files: # need to adjust RegEx still.
             file = file.replace("\\", "/").split("/")[-1]
             # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
             # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
-
-            instrument = re.search(r"[a-z]+", record)
-            date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", record)     # (\.) ([-|\.])
-            # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-            hhmmss = re.search(r"(\d+):(\d+):(\d+)", record)
             file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
-            wavelength = re.search(r"(\]\[(\d+))", record)
+            instrument = re.search(r"[a-z]+", file)
+
+            if file_type == 'fits':
+                date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", file)     # (\.) ([-|\.])
+                # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+                hhmmss = re.search(r"[0-9]{6}", file)
+
+            else:
+                date = re.search(r"[0-9]{8}", file)
+                hhmmss = re.search(r"(?<=_)[0-9]{6}", file)
 
             spikes = ""
             if re.search("spikes", file):
@@ -266,10 +270,10 @@ class Downloader:
             
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + spikes + '.' + file_type.group()
+            new_file_name = f"{date.group().replace('-','').replace('.','')}_{hhmmss.group().replace(':','')}_{instrument.group()}_{wavelength}_4k{spikes}.{file_type.group()}"
             # print(newFileName) # for testing.
             # rename file.
-            os.rename(os.path.join(self.path, file), os.path.join(self.path, new_file_name))
+            os.rename(os.path.join(self.path, str(wavelength), file).replace("\\", "/"), os.path.join(self.path, str(wavelength), new_file_name).replace("\\", "/"))
 
 
 def parse_args(args=None):
