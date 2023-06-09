@@ -254,7 +254,7 @@ class Downloader:
             file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
             instrument = re.search(r"[a-z]+", file)
 
-            if file_type == 'fits':
+            if file_type.group() == 'fits':
                 date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", file)     # (\.) ([-|\.])
                 # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
                 hhmmss = re.search(r"[0-9]{6}", file)
