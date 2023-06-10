@@ -9,15 +9,15 @@ from sunpy.visualization.colormaps import cm
 
 sdo_cmaps = {171: cm.sdoaia171, 193: cm.sdoaia193, 211: cm.sdoaia211, 304: cm.sdoaia304}
 
-sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=340, stretch=AsinhStretch(0.005), clip=False),
-             131: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.005), clip=False),
-             171: ImageNormalize(vmin=0, vmax=8600, stretch=AsinhStretch(0.005), clip=False),
-             193: ImageNormalize(vmin=0, vmax=9800, stretch=AsinhStretch(0.005), clip=False),
-             211: ImageNormalize(vmin=0, vmax=5800, stretch=AsinhStretch(0.005), clip=False),
-             304: ImageNormalize(vmin=0, vmax=8800, stretch=AsinhStretch(0.001), clip=False),
-             335: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.005), clip=False),
-             1600: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.005), clip=False),
-             1700: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.005), clip=False)
+sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=340, stretch=AsinhStretch(0.01), clip=False),
+             131: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.01), clip=False),
+             171: ImageNormalize(vmin=0, vmax=8600, stretch=AsinhStretch(0.01), clip=False),
+             193: ImageNormalize(vmin=0, vmax=9800, stretch=AsinhStretch(0.01), clip=False),
+             211: ImageNormalize(vmin=0, vmax=58000, stretch=AsinhStretch(0.01), clip=False),
+             304: ImageNormalize(vmin=0, vmax=8800, stretch=AsinhStretch(0.01), clip=False),
+             335: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.01), clip=False),
+             1600: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.01), clip=False),
+             1700: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.01), clip=False)
              }
 
 sdo_linear_norms = {94: ImageNormalize(vmin=0, vmax=2.41, clip=False),
@@ -54,7 +54,7 @@ def loadAIAMap(file_path, calibration='auto', fix_radius_padding=None, resolutio
     assert s_map.meta['QUALITY'] == 0, f'Invalid quality flag while loading AIA Map: {s_map.meta["QUALITY"]}'
 
     if fix_radius_padding is not None and resolution is not None:
-        s_map = NormalizeRadiusEditor(resolution, padding_factor=0.3).call(s_map)
+        s_map = NormalizeRadiusEditor(resolution, padding_factor=fix_radius_padding).call(s_map)
     try:
         s_map = AIAPrepEditor(calibration=calibration).call(s_map)
     except:
@@ -131,28 +131,6 @@ def loadMapStack(file_paths,
             stack[i,:,:][stack[i,:,:]>percentiles[1]] = percentiles[1]
 
     return stack.data
-
-
-def str2bool(v):
-    """converts string to boolean
-
-        arguments
-        ----------
-        v: string
-            string to convert to boolean
-
-        Returns
-        -------
-        a boolean value based on the string placed
-    """
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 if __name__ == '__main__':
