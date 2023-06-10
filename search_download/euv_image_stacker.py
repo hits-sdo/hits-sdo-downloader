@@ -4,13 +4,14 @@ import os
 from os.path import exists
 
 from functools import partial
+import matplotlib.image
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
-from search_download.utils.utils import loadMapStack, str2bool
+from search_download.utils.utils import loadMapStack
 
 # Initialize Python Logger
 logging.basicConfig(format='%(levelname)-4s '
@@ -31,13 +32,14 @@ def load_map_stack(aia_stack,
                     resolution=None,
                     remove_nans=True,
                     percentile_clip=0.25,
-                    stack_outpath=None):
+                    stack_outpath=None,
+                    file_format=None):
     # Extract filename from index_aia_i (remove aia_path)
 
     filename = aia_stack[0].replace('\\', '/').split('/')[-1].split('aia')[0]+'aia'
     for file in aia_stack:
         filename = filename + '_' + file.replace('\\', '/').split('/')[-1].split('_')[3]
-    filename = filename + '.npy'
+    filename = filename + '.' + file_format
 
     output_file = stack_outpath + '/' + filename
 
@@ -53,7 +55,14 @@ def load_map_stack(aia_stack,
                             remove_nans=remove_nans,
                             percentile_clip=percentile_clip)
         # Save stack
-        np.save(output_file, aia_stack)
+        if file_format=='npy':
+            np.save(output_file, aia_stack)
+        if file_format=='jpg':
+            aia_stack = aia_stack.transpose(1, 2, 0)
+            aia_stack[aia_stack<0] = 0
+            aia_stack[aia_stack>1] = 1
+            matplotlib.image.imsave(output_file, aia_stack, vmin=0, vmax=1)
+
 
     return output_file
 
@@ -70,6 +79,9 @@ def parse_args():
     p.add_argument('--stack_outpath', dest='stack_outpath', type=str,
                    default="/mnt/data_out",
                    help='out_path')
+    p.add_argument('--file_format', dest='file_format', type=str,
+                   default="npy",
+                   help='format to save the stack in')
     p.add_argument('--wavelength_order', type=str,
                         nargs='+', default=None,
                         help='Order in which to stack the files, needs to contain only available wavelengths')
@@ -102,6 +114,7 @@ if __name__ == "__main__":
     aia_path = args.aia_path
     matches = args.matches
     stack_outpath = args.stack_outpath
+    file_format = args.file_format
     wavelength_order = args.wavelength_order
     aia_preprocessing = args.aia_preprocessing
     calibration = args.calibration
@@ -111,6 +124,7 @@ if __name__ == "__main__":
     remove_nans = args.remove_nans
     percentile_clip = args.percentile_clip
     debug = args.debug
+    
 
     # Load indices
     matches = pd.read_csv(matches)
@@ -141,7 +155,8 @@ if __name__ == "__main__":
                                     resolution=resolution,
                                     remove_nans=remove_nans,
                                     percentile_clip=percentile_clip,
-                                    stack_outpath=stack_outpath)
+                                    stack_outpath=stack_outpath,
+                                    file_format=file_format)
     converted_file_paths = process_map(partial_load_map_stack, aia_files, max_workers=16, chunksize=5)
 
     # Save
