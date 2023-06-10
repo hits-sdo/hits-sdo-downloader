@@ -90,12 +90,15 @@ if __name__ == "__main__":
     LOG.setLevel(logging.INFO)
 
     p = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument('--aia_path', type=str, default="/mnt/disks/aia-raw", help='path to directory of aia files')
+    p.add_argument('--aia_path', type=str, default="/mnt/disks/aia-raw",
+                   help='path to directory of aia files')
     p.add_argument('-wl','--wavelengths', type=str,
-                        nargs='+', default=['211', '304','171'], help='Channels to combine')
-    p.add_argument('--cutoff_aia', type=float, default='3min',
+                        nargs='+', default=None,
+                        help='Channels to combine')
+    p.add_argument('--cutoff_aia', type=str, default='3min',
                    help='cutoff for time delta (difference between AIA images in different wavelengths) using pandas trequency aliases')
-    p.add_argument('--debug', action='store_true', help='Only process a few files (10)')
+    p.add_argument('--debug', action='store_true',
+                   help='Only process a few files (10)')
 
     args = p.parse_args()
 
