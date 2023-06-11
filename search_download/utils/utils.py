@@ -9,13 +9,13 @@ from sunpy.visualization.colormaps import cm
 
 sdo_cmaps = {171: cm.sdoaia171, 193: cm.sdoaia193, 211: cm.sdoaia211, 304: cm.sdoaia304}
 
-sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=340, stretch=AsinhStretch(0.02), clip=False),
+sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=20, stretch=AsinhStretch(0.02), clip=False),
              131: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.02), clip=False),
              171: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.02), clip=False),
-             193: ImageNormalize(vmin=0, vmax=9800, stretch=AsinhStretch(0.02), clip=False),
+             193: ImageNormalize(vmin=0, vmax=3000, stretch=AsinhStretch(0.02), clip=False),
              211: ImageNormalize(vmin=0, vmax=1500, stretch=AsinhStretch(0.02), clip=False),
              304: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.04), clip=False),
-             335: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.02), clip=False),
+             335: ImageNormalize(vmin=0, vmax=70, stretch=AsinhStretch(0.02), clip=False),
              1600: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.02), clip=False),
              1700: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.02), clip=False)
              }
