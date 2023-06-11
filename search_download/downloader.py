@@ -13,10 +13,12 @@ Andres Muñoz-Jaramillo - andres.munoz@swri.org // https://github.com/amunozj
 
 """
 import datetime
+import glob
 import os
 import re
 import argparse
 import drms  # Module to interface with JSOC https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html
+import shutil
 
 class Downloader:
     """
@@ -49,7 +51,10 @@ class Downloader:
         get_spike: (bool)
             Flag that specifies whether to download spikes files for AIA. Spikes are hot pixels
             that are normally removed from AIA images, but the user may want to retrieve them.
-
+        grayscale: (bool)
+            Whether to use the different AIA colormaps or a grayscale colormap
+        multiwavelength: (bool)
+            Whether to merge the files into multi-wavelength stacks.  Defaults to fits files
     """
     def __init__(self, 
                  email:str=None,
@@ -61,7 +66,8 @@ class Downloader:
                  file_format:str = None,
                  path:str = None,
                  download_limit:int = None,
-                 get_spike:bool = None):
+                 get_spike:bool = None,
+                 grayscale:bool = False):
         
         self.email = email
         if isinstance(sdate, str):
@@ -85,6 +91,7 @@ class Downloader:
         self.client = drms.Client(email = self.email, verbose = True)
         self.get_spike = get_spike # Bool switch to download spikes files or not.   Spikes are hot pixels normally removed from AIA, but can be donwloaded if desired
         self.export = None
+        self.grayscale = grayscale
 
         self.jpg_defaults = {94: {'scaling':'LOG', 'min': 1, 'max':240, 'ct': 'aia_94.lut'},
                              131:{'scaling':'LOG', 'min': 3, 'max':500, 'ct': 'aia_131.lut'},
@@ -183,23 +190,39 @@ class Downloader:
         for wavelength in self.wavelength:
             jsoc_string = self.assemble_jsoc_string(wavelength)
             if self.format == 'jpg' and self.instrument == 'aia':
+                
+                protocol_args = self.jpg_defaults[wavelength]
+                if self.grayscale:
+                    protocol_args['ct'] = 'grey.sao'
+
                 export_request = self.client.export(jsoc_string,
                                                     protocol = self.format,
-                                                    filenamefmt=None,
-                                                    protocol_args = self.jpg_defaults[wavelength])
+                                                    protocol_args = protocol_args)
             else:
                 export_request = self.client.export(jsoc_string,
                                                     protocol = self.format,
-                                                    filenamefmt=None)
-            export_output = export_request.download(self.path)
-            export.append(export_output)
-            if self.instrument == 'hmi':
-                break
-            self.rename_filename(export_output)
+                                                    method='url-tar')
+            export_request.wait()
+
+            # If the download path doesn't exist, make one.
+            if not os.path.exists(os.path.join(self.path, str(wavelength)).replace('\\','/')):
+                os.mkdir(os.path.join(self.path, str(wavelength)).replace('\\','/'))            
+            export_output = export_request.download(os.path.join(self.path, str(wavelength)).replace('\\','/'))
+
+            if self.format == 'fits':
+                for f in export_output.download:
+                    shutil.unpack_archive(f, os.path.join(self.path, str(wavelength)).replace('\\','/'))
+                    os.remove(f)
+            else:
+                export.append(export_output)
+
+            files = glob.glob(os.path.join(self.path, str(wavelength), f'*.{self.format}').replace('\\','/'))
+            self.rename_filename(files, wavelength)
+
         return export
 
 
-    def rename_filename(self, export_request):
+    def rename_filename(self, files, wavelength):
         '''
         Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type] 
 
@@ -224,20 +247,21 @@ class Downloader:
         # We're using RegEx:
         # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
 
-        files = export_request["download"]
-        records = export_request["record"]
-
-        for file, record in zip(files, records): # need to adjust RegEx still.
+        for file in files: # need to adjust RegEx still.
             file = file.replace("\\", "/").split("/")[-1]
             # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
             # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
-
-            instrument = re.search(r"[a-z]+", record)
-            date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", record)     # (\.) ([-|\.])
-            # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-            hhmmss = re.search(r"(\d+):(\d+):(\d+)", record)
             file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
-            wavelength = re.search(r"(\]\[(\d+))", record)
+            instrument = re.search(r"[a-z]+", file)
+
+            if file_type == 'fits':
+                date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", file)     # (\.) ([-|\.])
+                # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
+                hhmmss = re.search(r"[0-9]{6}", file)
+
+            else:
+                date = re.search(r"[0-9]{8}", file)
+                hhmmss = re.search(r"(?<=_)[0-9]{6}", file)
 
             spikes = ""
             if re.search("spikes", file):
@@ -245,10 +269,10 @@ class Downloader:
             
             # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
 
-            new_file_name = date.group().replace('-','').replace('.','') + '_' + hhmmss.group().replace(':','') + '_' + instrument.group() + "_" + wavelength.group(2) + '_' + '4k' + spikes + '.' + file_type.group()
+            new_file_name = f"{date.group().replace('-','').replace('.','')}_{hhmmss.group().replace(':','')}_{instrument.group()}_{wavelength}_4k{spikes}.{file_type.group()}"
             # print(newFileName) # for testing.
             # rename file.
-            os.rename(os.path.join(self.path, file), os.path.join(self.path, new_file_name))
+            os.rename(os.path.join(self.path, str(wavelength), file).replace("\\", "/"), os.path.join(self.path, str(wavelength), new_file_name).replace("\\", "/"))
 
 
 def parse_args(args=None):
@@ -305,6 +329,16 @@ def parse_args(args=None):
                         help='Limit the number of files to download, defaults to 1000'
                         )
 
+    parser.add_argument('--grayscale',
+                        action='store_true',
+                        help='Whether to use black and white colormaps, or the SDO colortables'
+                        )
+    
+    parser.add_argument('--multiwavelength',
+                        action='store_true',
+                        help='Whether to collate wavelengths in different channels'
+                        )    
+
     return parser.parse_args(args)
 
 
@@ -318,15 +352,17 @@ if __name__=="__main__":
                             parser.cadence,
                             parser.format,
                             parser.path,
-                            parser.download_limit)
+                            parser.download_limit,
+                            grayscale=parser.grayscale
+                            )
 
-    request = downloader.create_query_request() # create drms client query request.
-    is_larger = False
-    for i in request:
-        if i.shape[0] > downloader.download_limit:
-            print(f'Download request of {i.shape[0]} files is larger than download limit of {downloader.download_limit} files')
-            is_larger = True
-            break
+    # request = downloader.create_query_request() # create drms client query request.
+    # is_larger = False
+    # for i in request:
+    #     if i.shape[0] > downloader.download_limit:
+    #         print(f'Download request of {i.shape[0]} files is larger than download limit of {downloader.download_limit} files')
+    #         is_larger = True
+    #         break
 
-    if not is_larger:
-        downloader.download_data()
+    # if not is_larger:
+    downloader.download_data()
