@@ -63,7 +63,7 @@ def loadAIAMap(file_path, calibration='auto', fix_radius_padding=None, resolutio
     """
 
     s_map, _ = LoadMapEditor().call(file_path)
-    assert s_map.meta['QUALITY'] == 0, f'Invalid quality flag while loading AIA Map: {s_map.meta["QUALITY"]}'
+    assert s_map.meta['QUALITY'] == 0, f'Invalid quality flag while loading AIA Map {file_path}: {s_map.meta["QUALITY"]}'
 
     if fix_radius_padding is not None and resolution is not None:
         s_map = NormalizeRadiusEditor(resolution, padding_factor=fix_radius_padding).call(s_map)
