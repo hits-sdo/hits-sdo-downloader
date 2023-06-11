@@ -3,21 +3,21 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
-from astropy.visualization import ImageNormalize, AsinhStretch
+from astropy.visualization import ImageNormalize, AsinhStretch, SqrtStretch, PowerStretch
 from iti.data.editor import LoadMapEditor, NormalizeRadiusEditor, AIAPrepEditor
 from sunpy.visualization.colormaps import cm
 
 sdo_cmaps = {171: cm.sdoaia171, 193: cm.sdoaia193, 211: cm.sdoaia211, 304: cm.sdoaia304}
 
-sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=340, stretch=AsinhStretch(0.01), clip=False),
-             131: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.01), clip=False),
-             171: ImageNormalize(vmin=0, vmax=8600, stretch=AsinhStretch(0.01), clip=False),
-             193: ImageNormalize(vmin=0, vmax=9800, stretch=AsinhStretch(0.01), clip=False),
-             211: ImageNormalize(vmin=0, vmax=58000, stretch=AsinhStretch(0.01), clip=False),
-             304: ImageNormalize(vmin=0, vmax=8800, stretch=AsinhStretch(0.01), clip=False),
-             335: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.01), clip=False),
-             1600: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.01), clip=False),
-             1700: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.01), clip=False)
+sdo_asinh_norms = {94: ImageNormalize(vmin=0, vmax=340, stretch=AsinhStretch(0.02), clip=False),
+             131: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.02), clip=False),
+             171: ImageNormalize(vmin=0, vmax=1400, stretch=AsinhStretch(0.02), clip=False),
+             193: ImageNormalize(vmin=0, vmax=9800, stretch=AsinhStretch(0.02), clip=False),
+             211: ImageNormalize(vmin=0, vmax=1500, stretch=AsinhStretch(0.02), clip=False),
+             304: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.04), clip=False),
+             335: ImageNormalize(vmin=0, vmax=600, stretch=AsinhStretch(0.02), clip=False),
+             1600: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.02), clip=False),
+             1700: ImageNormalize(vmin=0, vmax=4000, stretch=AsinhStretch(0.02), clip=False)
              }
 
 sdo_linear_norms = {94: ImageNormalize(vmin=0, vmax=2.41, clip=False),
@@ -30,6 +30,18 @@ sdo_linear_norms = {94: ImageNormalize(vmin=0, vmax=2.41, clip=False),
              1600: ImageNormalize(vmin=0, vmax=94.5, clip=False),
              1700: ImageNormalize(vmin=0, vmax=94.5, clip=False)
              }
+
+sdo_power_norms = {94: ImageNormalize(vmin=0, vmax=2.41, stretch=PowerStretch(0.5), clip=False),
+             131: ImageNormalize(vmin=0, vmax=11.6, stretch=PowerStretch(0.5), clip=False),
+             171: ImageNormalize(vmin=0, vmax=305, stretch=PowerStretch(0.5), clip=False),
+             193: ImageNormalize(vmin=0, vmax=417, stretch=PowerStretch(0.5), clip=False),
+             211: ImageNormalize(vmin=0, vmax=151, stretch=PowerStretch(0.5), clip=False),
+             304: ImageNormalize(vmin=0, vmax=83.1, stretch=PowerStretch(0.5), clip=False),
+             335: ImageNormalize(vmin=0, vmax=7.80, stretch=PowerStretch(0.5), clip=False),
+             1600: ImageNormalize(vmin=0, vmax=94.5, stretch=PowerStretch(0.5), clip=False),
+             1700: ImageNormalize(vmin=0, vmax=94.5, stretch=PowerStretch(0.5), clip=False)
+             }
+
 
 
 def loadAIAMap(file_path, calibration='auto', fix_radius_padding=None, resolution=None):
@@ -100,7 +112,7 @@ def loadMapStack(file_paths,
     file_paths: list of files to stack.
     aia_preprocessing: Whether to pre-process AIA or simply load the image
     calibration: calibration mode for AIAPrepEditor
-    normalization: whether to use 'asinh' or 'linear' normalization
+    normalization: whether to use 'asinh', 'power' or 'linear' normalization
     fix_radius_padding: how far from the solar limb to place the edge of the image
     resolution: target resolution in pixels of 2*(1+fix_radius_padding) solar radii.
     remove_nans: change nans and inf for zero
@@ -114,9 +126,11 @@ def loadMapStack(file_paths,
     load_func = loadAIAMap if aia_preprocessing else loadMap
     s_maps = [load_func(file, resolution=resolution, calibration=calibration, fix_radius_padding=fix_radius_padding) for file in file_paths]
     if normalization == 'linear':
-        sdo_norms = sdo_asinh_norms
-    else:
         sdo_norms = sdo_linear_norms
+    elif normalization == 'power':
+        sdo_norms = sdo_power_norms
+    else:
+        sdo_norms = sdo_asinh_norms
     
     stack = np.stack([sdo_norms[s_map.wavelength.value](s_map.data) for s_map in s_maps]).astype(np.float32)
 
