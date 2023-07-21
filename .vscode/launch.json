@@ -1,0 +1,67 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Stack images",
+      "type": "python",
+      "request": "launch",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
+      "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
+      "justMyCode": true,
+      "args": [
+        "--aia_path", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion",
+        "--matches", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion/aia_matches_171_211_304.csv",
+        // "--matches", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion/aia_matches_171_193_211.csv",
+        // "--matches", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion/aia_matches_193_335_94.csv",
+        // "--stack_outpath", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA335_193_94_Miniset_exp",
+        // "--stack_outpath", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA211_193_171_Miniset_exp",
+        "--stack_outpath", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA304_211_171_Miniset_exp",
+        "--file_format", "jpg"
+        "--wavelength_order", "304", "211", "171",
+        // "--wavelength_order", "335", "193", "94",
+        // "--wavelength_order", "211", "193", "171",
+        "--aia_preprocessing",
+        "--fix_radius_padding", "0.25",
+        "--resolution", "4096",
+        "--normalization", "asinh",
+        "--remove_nans"
+      ]
+    },
+    {
+      "name": "Indexer",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": [
+        "--aia_path", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion",
+        "-wl", "304", "211", "171",
+        "--cutoff_aia", "3min"
+      ]
+    },
+    {
+      "name": "Downloader",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": [
+        "--email", "amunozj@boulder.swri.edu",
+        "-sd", "2010-06-01",
+        "-ed", "2023-03-30",
+        "-i", "aia",
+        "-wl", "335", "193", "94",
+        "-c", "32d",
+        "-f", "fits",
+        "-p", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW",
+        "-dlim", "30000"
+      ]
+    }
+  ]
+}
