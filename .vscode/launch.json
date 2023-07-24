@@ -35,8 +35,9 @@
       "name": "Indexer",
       "type": "python",
       "request": "launch",
-      "program": "${file}",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
       "justMyCode": true,
       "args": [
         "--aia_path", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion",
@@ -48,8 +49,9 @@
       "name": "Downloader",
       "type": "python",
       "request": "launch",
-      "program": "${file}",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
       "justMyCode": true,
       "args": [
         "--email", "amunozj@boulder.swri.edu",
@@ -59,9 +61,32 @@
         "-wl", "335", "193", "94",
         "-c", "32d",
         "-f", "fits",
-        "-p", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW",
+        "-p", "/home/amunozj/data/search",
         "-dlim", "30000"
       ]
-    }
+    },
+    {
+      "name": "Downloader Test",
+      "type": "python",
+      "request": "launch",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
+      "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
+      "justMyCode": true
+    },
+    {
+      "name": "Renamer",
+      "type": "python",
+      "request": "launch",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
+      "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
+      "justMyCode": true,
+      "args": [
+        "-f", "fits",
+        "-p", "/d0/euv/aia/raw/2010_2023_1d",
+      ]
+    }    
+    
   ]
 }
