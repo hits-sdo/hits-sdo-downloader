@@ -157,7 +157,7 @@ if __name__ == "__main__":
                                     percentile_clip=percentile_clip,
                                     stack_outpath=stack_outpath,
                                     file_format=file_format)
-    converted_file_paths = process_map(partial_load_map_stack, aia_files, max_workers=16, chunksize=5)
+    converted_file_paths = process_map(partial_load_map_stack, aia_files, max_workers=None, chunksize=5)
 
     # Save
     if debug:
