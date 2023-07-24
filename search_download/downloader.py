@@ -15,10 +15,11 @@ Andres Muñoz-Jaramillo - andres.munoz@swri.org // https://github.com/amunozj
 import datetime
 import glob
 import os
-import re
 import argparse
-import drms  # Module to interface with JSOC https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html
 import shutil
+import drms  # Module to interface with JSOC https://docs.sunpy.org/projects/drms/en/stable/_modules/drms/utils.html
+
+from search_download.file_renamer import rename_filenames
 
 class Downloader:
     """
@@ -71,8 +72,10 @@ class Downloader:
         
         self.email = email
         if isinstance(sdate, str):
-            self.sdate = datetime.date.fromisoformat(sdate)
-            self.edate = datetime.date.fromisoformat(edate)
+            date_format = '%Y-%m-%dT%H:%M:%S'
+            self.sdate = datetime.datetime.strptime(sdate, date_format).date()
+            self.edate = datetime.datetime.strptime(edate, date_format).date()
+
         else:
             self.sdate = sdate
             self.edate = edate
@@ -217,62 +220,11 @@ class Downloader:
                 export.append(export_output)
 
             files = glob.glob(os.path.join(self.path, str(wavelength), f'*.{self.format}').replace('\\','/'))
-            self.rename_filename(files, wavelength)
+            rename_filenames(files, wavelength)
 
         return export
 
 
-    def rename_filename(self, files, wavelength):
-        '''
-        Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[file_type] 
-
-        Parameters:
-            None
-        
-        Returns:
-            None
-        '''
-
-        # QUESTIONS: What do all resolutions look like in string? Do we use sdate?
-        # https://sdo.gsfc.nasa.gov/data/aiahmi/
-        # an AIA string looks like this:  "aia.lev1_euv_12s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h][171]" 
-        # an HMI looks like this:         "hmi.M_720s[2010-12-21T00:00:00Z-2010-12-31T00:00:00Z@12h]"
-
-        # aia.lev1_euv_12s.2010-12-21T120013Z.171.image_lev1.fits
-        # or
-        # aia.lev1_euv_12s.2010-12-21T000013Z.171.spikes.fits
-        #
-        # hmi.m_720s.20101223_000000_TAI.1.magnetogram.fits
-
-        # We're using RegEx:
-        # https://www.rexegg.com/regex-quickstart.html - RegEx cheat sheet
-
-        for file in files: # need to adjust RegEx still.
-            file = file.replace("\\", "/").split("/")[-1]
-            # File:   aia.lev1_euv_12s.2010-12-21T000004Z.94.image_lev1.fits 
-            # Record: aia.lev1_euv_12s[2010-12-21T00:00:02Z][94]
-            file_type = re.search(r"(jpg|fits)", file) # Need spikes files too.
-            instrument = re.search(r"[a-z]+", file)
-
-            if file_type.group() == 'fits':
-                date = re.search(r"(\d+)(\S)(\d+)(\S)(\d+)", file)     # (\.) ([-|\.])
-                # resolution = re.search(r"4k", file) # NEED TO FIX THIS (not using RegEx - dummy statement)
-                hhmmss = re.search(r"[0-9]{6}", file)
-
-            else:
-                date = re.search(r"[0-9]{8}", file)
-                hhmmss = re.search(r"(?<=_)[0-9]{6}", file)
-
-            spikes = ""
-            if re.search("spikes", file):
-                spikes = ".spikes"
-            
-            # Rename file name to this format: YYYYMMDD_HHMMSS_RESOLUTION_INSTRUMENT.[filetype]
-
-            new_file_name = f"{date.group().replace('-','').replace('.','')}_{hhmmss.group().replace(':','')}_{instrument.group()}_{wavelength}_4k{spikes}.{file_type.group()}"
-            # print(newFileName) # for testing.
-            # rename file.
-            os.rename(os.path.join(self.path, str(wavelength), file).replace("\\", "/"), os.path.join(self.path, str(wavelength), new_file_name).replace("\\", "/"))
 
 
 def parse_args(args=None):
@@ -343,17 +295,17 @@ def parse_args(args=None):
 
 
 if __name__=="__main__":
-    parser = parse_args()
-    downloader = Downloader(parser.email,
-                            parser.sdate,
-                            parser.edate,
-                            parser.wavelength,
-                            parser.instrument,
-                            parser.cadence,
-                            parser.format,
-                            parser.path,
-                            parser.download_limit,
-                            grayscale=parser.grayscale
+    parser_output = parse_args()
+    downloader = Downloader(parser_output.email,
+                            parser_output.sdate,
+                            parser_output.edate,
+                            parser_output.wavelength,
+                            parser_output.instrument,
+                            parser_output.cadence,
+                            parser_output.format,
+                            parser_output.path,
+                            parser_output.download_limit,
+                            grayscale=parser_output.grayscale
                             )
 
     # request = downloader.create_query_request() # create drms client query request.
