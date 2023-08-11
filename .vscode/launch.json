@@ -40,9 +40,10 @@
       "cwd":"${workspaceFolder}",
       "justMyCode": true,
       "args": [
-        "--aia_path", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion",
-        "-wl", "304", "211", "171",
-        "--cutoff_aia", "3min"
+        "--hmi_path", "/d0/magnetograms/hmi/raw/2010_2023_1d",
+        "--aia_path", "/d0/euv/aia/raw/2010_2023_1d",
+        "-wl", "94", "131", "171", "193", "211", "304", "335",
+        "--dt_round", "3min"
       ]
     },
     {
