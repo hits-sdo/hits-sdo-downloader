@@ -150,7 +150,8 @@ if __name__ == "__main__":
     # load aia dates
     aia_iso_dates = filenames_to_dates(aia_filenames, debug)
 
-    result_matches = match_file_times(aia_iso_dates, aia_filenames, intersection_wavelengths)
+    aia_sufixes = [f'aia{wl}' for wl in intersection_wavelengths]
+    result_matches = match_file_times(aia_iso_dates, aia_filenames, aia_sufixes)
 
     # Process HMI files, if hmi path provided
     if hmi_path is not None:
