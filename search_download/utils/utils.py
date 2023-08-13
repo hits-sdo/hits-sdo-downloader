@@ -1,11 +1,12 @@
-import argparse
-
+import dask
+from dask.delayed import delayed
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
 from astropy.visualization import ImageNormalize, AsinhStretch, SqrtStretch, PowerStretch
 from iti.data.editor import LoadMapEditor, NormalizeRadiusEditor, AIAPrepEditor
 from sunpy.visualization.colormaps import cm
+from sunpy.map import Map
 
 sdo_cmaps = {171: cm.sdoaia171, 193: cm.sdoaia193, 211: cm.sdoaia211, 304: cm.sdoaia304}
 
@@ -75,7 +76,7 @@ def loadAIAMap(file_path, calibration='auto', fix_radius_padding=None, resolutio
     return s_map
 
 
-def loadMap(file_path, resolution=None, fix_radius_padding=None, calibration=None):
+def loadMap(file_path, resolution=None, fix_radius_padding=None, calibration=None, zero_outside_disk=False):
     """Load and resample a FITS file (no pre-processing).
 
 
@@ -85,14 +86,42 @@ def loadMap(file_path, resolution=None, fix_radius_padding=None, calibration=Non
     resolution: target resolution in pixels of 2*(1+fix_radius_padding) solar radii.
     fix_radius_padding: dummy parameter so that we can exchange this function for loadAIAMap
     calibration: dummy parameter so that we can exchange this function for loadAIAMap
+    zero_outside_disk: Whether to remove values outside the solar disk (HMI has garbage outside the disk)
 
     Returns
     -------
     the preprocessed SunPy Map
     """
     s_map, _ = LoadMapEditor().call(file_path)
+    if fix_radius_padding is not None and resolution is not None:
+        s_map = NormalizeRadiusEditor(resolution, padding_factor=fix_radius_padding).call(s_map)
+
+    # Repad if target resolution is less than expected.
     if resolution is not None:
-        s_map = s_map.resample((resolution, resolution) * u.pix)
+        if resolution > s_map.data.shape[0]:
+
+            new_fov = np.zeros((resolution, resolution))
+            new_meta = s_map.meta
+
+            new_meta['crpix1'] = new_meta['crpix1'] - s_map.data.shape[0] / 2 + new_fov.shape[0] / 2
+            new_meta['crpix2'] = new_meta['crpix2'] - s_map.data.shape[1] / 2 + new_fov.shape[1] / 2
+            new_meta['naxis1'] = resolution
+            new_meta['naxis2'] = resolution
+
+            # Identify the indices for appending the map original FoV
+            i1 = int(new_fov.shape[0] / 2 - s_map.data.shape[0] / 2)
+            i2 = int(new_fov.shape[0] / 2 + s_map.data.shape[0] / 2)
+
+            # Insert original image in new field of view
+            new_fov[i1:i2, i1:i2] = s_map.data[:, :]
+
+            # Assemble Sunpy map
+            s_map = Map(new_fov, new_meta)
+
+    if zero_outside_disk:
+        radius = get_array_radius(s_map)
+        s_map.data[radius>1] = 0
+
     return s_map
 
 
@@ -103,7 +132,8 @@ def loadMapStack(file_paths,
                  fix_radius_padding=None,
                  resolution=None,
                  remove_nans=True,
-                 percentile_clip=0.25):
+                 percentile_clip=0.25,
+                 return_meta=False):
     """Load a stack of FITS files, resample ot specific resolution, and stackt hem.
 
 
@@ -117,6 +147,7 @@ def loadMapStack(file_paths,
     resolution: target resolution in pixels of 2*(1+fix_radius_padding) solar radii.
     remove_nans: change nans and inf for zero
     percentile_clip: clipping of the hottest pixels to the 100-percentile_clip percentile
+    return_meta: returns the meta property of the first wavelength in the stack
 
 
     Returns
@@ -124,7 +155,8 @@ def loadMapStack(file_paths,
     numpy array with AIA stack
     """
     load_func = loadAIAMap if aia_preprocessing else loadMap
-    s_maps = [load_func(file, resolution=resolution, calibration=calibration, fix_radius_padding=fix_radius_padding) for file in file_paths]
+    s_maps_delayed = [delayed(load_func)(file, resolution=resolution, calibration=calibration, fix_radius_padding=fix_radius_padding) for file in file_paths]
+    s_maps = dask.compute(*s_maps_delayed)
     if normalization == 'linear':
         sdo_norms = sdo_linear_norms
     elif normalization == 'power':
@@ -132,7 +164,11 @@ def loadMapStack(file_paths,
     else:
         sdo_norms = sdo_asinh_norms
     
-    stack = np.stack([sdo_norms[s_map.wavelength.value](s_map.data) for s_map in s_maps]).astype(np.float32)
+    if normalization != 'none':
+        stack = np.stack([sdo_norms[s_map.wavelength.value](s_map.data) for s_map in s_maps]).astype(np.float32)
+    else:
+        stack = np.stack([s_map.data for s_map in s_maps]).astype(np.float32)
+
 
     if remove_nans:
         stack[np.isnan(stack)] = 0
@@ -144,7 +180,23 @@ def loadMapStack(file_paths,
             stack[i,:,:][stack[i,:,:]<percentiles[0]] = percentiles[0]
             stack[i,:,:][stack[i,:,:]>percentiles[1]] = percentiles[1]
 
-    return stack.data
+    if return_meta:
+        return stack, s_maps[0].meta
+    else:
+        return stack
+
+
+def get_array_radius(amap):
+    """
+    Compute an array with the radial coordinate for each pixel
+    :param amap:
+    :return: (W, H) array
+    """
+    x, y = np.meshgrid(*[np.arange(v.value) for v in amap.dimensions]) * u.pixel
+    hpc_coords = amap.pixel_to_world(x, y)
+    array_radius = np.sqrt(hpc_coords.Tx ** 2 + hpc_coords.Ty ** 2) / amap.rsun_obs
+
+    return array_radius
 
 
 if __name__ == '__main__':
