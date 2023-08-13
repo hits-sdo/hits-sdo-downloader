@@ -32,6 +32,26 @@
       ]
     },
     {
+      "name": "Fits to Zarr",
+      "type": "python",
+      "request": "launch",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
+      "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
+      "justMyCode": true,
+      "args": [
+        "--aia_path", "/d0/euv/aia/raw/2010_2023_1d",
+        "--matches", "/d0/euv/aia/raw/2010_2023_1d/aia_hmi_matches_94_131_171_193_211_304_335_hmi.csv",
+        "--zarr_outpath", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2023_1d.zarr",
+        "--aia_preprocessing",
+        "--fix_radius_padding", "0.25",
+        "--resolution", "4096",
+        "--aia_normalization", "none",
+        "--remove_nans",
+        "--debug"
+      ]
+    },
+    {
       "name": "Indexer",
       "type": "python",
       "request": "launch",
