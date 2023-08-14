@@ -120,7 +120,7 @@ def loadMap(file_path, resolution=None, fix_radius_padding=None, calibration=Non
 
     if zero_outside_disk:
         radius = get_array_radius(s_map)
-        s_map.data[radius>1] = 0
+        s_map.data[radius>1] = 1e-10
 
     return s_map
 
@@ -171,8 +171,8 @@ def loadMapStack(file_paths,
 
 
     if remove_nans:
-        stack[np.isnan(stack)] = 0
-        stack[np.isinf(stack)] = 0
+        stack[np.isnan(stack)] = 1e-10
+        stack[np.isinf(stack)] = 1e-10
 
     if percentile_clip:
         for i in range(stack.shape[0]):

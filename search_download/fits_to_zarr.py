@@ -164,8 +164,8 @@ if __name__ == "__main__":
             hmi_map = loadMap(file_stack[0], resolution=resolution, fix_radius_padding=fix_radius_padding, zero_outside_disk=True)
 
             if remove_nans:
-                hmi_map.data[np.isnan(hmi_map.data)] = 0
-                hmi_map.data[np.isinf(hmi_map.data)] = 0                
+                hmi_map.data[np.isnan(hmi_map.data)] = 1e-10
+                hmi_map.data[np.isinf(hmi_map.data)] = 1e-10               
 
             sdo_stacks[i, len(aia_columns), :, :] = hmi_map.data
 
