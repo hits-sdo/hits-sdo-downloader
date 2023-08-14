@@ -1,10 +1,8 @@
 import argparse
 import logging
-import os
-from os.path import exists
+from datetime import datetime
 
 from functools import partial
-import matplotlib.image
 
 import numpy as np
 import pandas as pd
@@ -22,6 +20,16 @@ logging.basicConfig(format='%(levelname)-4s '
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
+META_PROPERTIES_TO_KEEP = ['naxis', 'naxis1', 'naxis2', 'bld_vers', 'lvl_num',   # Image properties
+                           't_rec', 'origin', 'date', 'telescop', 'instrume', 'date-obs', 't_obs',  # Dates
+                           'ctype1', 'cunit1', 'crval1', 'cdelt1', 'crpix1',  # dimension 1 properties
+                           'ctype2', 'cunit2', 'crval2', 'cdelt2', 'crpix2',  # dimension 2 properties
+                           'r_sun', 'mpo_rec', 'inst_rot', 'imscl_mp', 'x0_mp', 'y0_mp', 'asd_rec', # Pointing information
+                           'sat_y0', 'sat_z0', 'sat_rot', 'acs_mode', 'acs_eclp', 'acs_sunp', 'acs_safe', 'acs_cgt', # Satelite orientation
+                           'orb_rec', 'dsun_ref', 'dsun_obs', 'rsun_ref', 'rsun_obs', # Distance to the Sun and solar radii
+                           'obs_vr', 'obs_vw', 'obs_vn',  # Instrument velocity
+                           'crln_obs', 'crlt_obs', 'car_rot', 'hgln_obs', 'hglt_obs',  # Heliographic coordinates
+                           'pc1_1', 'pc1_2', 'pc2_1', 'pc2_2'] # Detector rotation matrix
 
 def parse_args():
     # Commands 
@@ -75,6 +83,9 @@ if __name__ == "__main__":
     percentile_clip = args.percentile_clip
     debug = args.debug
     
+    # Prepare dictionary for storing header information
+    for key in META_PROPERTIES_TO_KEEP:
+        vars()[key] = []
 
     # Load indices
     matches = pd.read_csv(matches)
@@ -137,11 +148,13 @@ if __name__ == "__main__":
         try:
             # open file
             aia_stack, aia_meta = partial_load_map_stack(file_stack)
-            # for key in data.meta:
-            #     if key not in HEADER_FIELD_IGNORE:
-            #         vars()[key].append(data.meta[key])
 
-            sdo_stacks[i, 0:len(aia_columns), :, :] = aia_stack  
+            # Store meta parameters
+            for key in META_PROPERTIES_TO_KEEP:
+                vars()[key].append(aia_meta[key])
+
+            sdo_stacks[i, 0:len(aia_columns), :, :] = aia_stack
+
         except Exception as e:
             print(e)
 
@@ -157,5 +170,38 @@ if __name__ == "__main__":
             sdo_stacks[i, len(aia_columns), :, :] = hmi_map.data
 
         except Exception as e:
-            print(e)              
+            print(e)
+
+    # Store header parameters
+    for key in META_PROPERTIES_TO_KEEP:
+        root.attrs[key.lower()]=vars()[key]                      
+
+    # Set attribute that specifies the dimensions so that xarray can open the zarr
+    sdo_stacks.attrs['_ARRAY_DIMENSIONS'] = ['t_obs', 'channel', 'x', 'y']
+
+    # Create group for t_obs
+    sdo_t_obs = root.create_dataset('t_obs', 
+                            shape=(matches.shape[0]), 
+                            chunks=(None), 
+                            dtype='M8[ns]',
+                            compressor=None) 
+
+    # Convert t_obs to datetime and save it
+    sdo_t_obs[:] = np.array([datetime.strptime(t, '%Y-%m-%dT%H:%M:%S.%f') for t in t_obs])
+    sdo_t_obs.attrs['_ARRAY_DIMENSIONS'] = ['t_obs']
+
+    # Add channels all channels need to have the same number of characters
+    channels = ['aia'+column.split('files_aia')[1].zfill(3) for column in aia_columns]
+    channels.append('hmilos')
+
+    sdo_channels = root.create_dataset('channel', 
+                            shape=(len(aia_columns) + len(hmi_columns)), 
+                            chunks=(None), 
+                            dtype=str,
+                            compressor=None)
+    sdo_channels[:] = np.array(channels)
+    sdo_channels.attrs['_ARRAY_DIMENSIONS'] = ['channel']
+    
+
+    zarr.consolidate_metadata(store)           
     
