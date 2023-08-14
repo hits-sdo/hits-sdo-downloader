@@ -193,14 +193,14 @@ if __name__ == "__main__":
         # Remove files with bad quality
         clean_aia_filenames = []
         for channel, mask in zip(aia_filenames, quality[0]):
-            clean_channel = [channel[i] for i in range(len(quality)) if mask[i]]
+            clean_channel = [channel[i] for i in range(len(channel)) if mask[i]]
             clean_aia_filenames.append(clean_channel)
         aia_filenames = clean_aia_filenames
 
         if hmi_path is not None:
             clean_hmi_filenames = []
             for channel, mask in zip(hmi_filenames, quality[1]):
-                clean_channel = [channel[i] for i in range(len(quality)) if mask[i]]
+                clean_channel = [channel[i] for i in range(len(channel)) if mask[i]]
                 clean_hmi_filenames.append(clean_channel)
             hmi_filenames = clean_hmi_filenames        
 
