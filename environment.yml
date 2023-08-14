@@ -5,6 +5,8 @@ dependencies:
   - sunpy
   - zarr
   - numcodecs
+  - xarray
+  - cftime
   - pip
   - pip:
     - streamlit
