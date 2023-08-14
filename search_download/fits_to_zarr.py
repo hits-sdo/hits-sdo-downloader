@@ -121,11 +121,11 @@ if __name__ == "__main__":
     root = zarr.group(store=store, overwrite=True)
 
     if len(aia_columns) > 0:
-        dataset_name = 'aia_' + '_'.join([column.split('files_aia')[1] for column in aia_columns])
+        dataset_name = 'aia'
         if len(hmi_columns) > 0:
-            dataset_name = dataset_name + '_hmilos'
+            dataset_name = dataset_name + '_hmi'
     elif len(hmi_columns) > 0:
-        dataset_name = 'hmilos'
+        dataset_name = 'hmi'
 
     sdo_stacks = root.create_dataset(dataset_name, 
                             shape=(matches.shape[0], len(aia_columns) + len(hmi_columns), resolution, resolution), 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     # Store header parameters
     for key in META_PROPERTIES_TO_KEEP:
-        root.attrs[key.lower()]=vars()[key]                      
+        sdo_stacks.attrs[key.lower()]=vars()[key]                      
 
     # Set attribute that specifies the dimensions so that xarray can open the zarr
     sdo_stacks.attrs['_ARRAY_DIMENSIONS'] = ['t_obs', 'channel', 'x', 'y']
