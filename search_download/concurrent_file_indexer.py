@@ -6,7 +6,12 @@ import re
 
 import dateutil.parser as dt
 import pandas as pd
+from tqdm import tqdm
+from sunpy.map import Map
 
+import dask
+from dask.delayed import delayed
+from tqdm.dask import TqdmCallback
 
 def _filename_to_date(data_filename):
     """ Takes a single path to an AIA or HMI file and returns its associated date   
@@ -27,7 +32,7 @@ def _filename_to_date(data_filename):
 
 
     
-def filenames_to_dates(data_filenames, debug):
+def filenames_to_dates(data_filenames, debug=False):
     """ load dates from filenames for both AIA and HMI. it    
     Assumes that the files have the date within their name in the following format:
         YYYYMMDD_hhmmss
@@ -44,8 +49,6 @@ def filenames_to_dates(data_filenames, debug):
     -------
     List of lists with files converted to datetimes.
     """
-    if debug:
-        data_filenames = [wl_dates[0:10] for wl_dates in data_filenames]
     iso_dates = [[_filename_to_date(file) for file in wl_files] for wl_files in data_filenames]
     return iso_dates
 
@@ -61,6 +64,7 @@ def create_date_file_df(dates, files, sufix, dt_round='3min', debug=False):
             AIA wavelength or the name 'hmi'
     dt_round: frequency alias to round dates
         see https://pandas.pydata.org/docs/reference/api/pandas.Series.dt.round.html
+    debug: Whether to use only a small set of the files (10)
 
 
     Returns
@@ -79,7 +83,7 @@ def create_date_file_df(dates, files, sufix, dt_round='3min', debug=False):
     return df1
 
 
-def match_file_times(all_iso_dates, all_filenames, all_sufixes, joint_df=None):
+def match_file_times(all_iso_dates, all_filenames, all_sufixes, joint_df=None, debug=False):
     """ Parses aia_iso_dates and compile lists at the same time"
 
     Parameters
@@ -89,6 +93,7 @@ def match_file_times(all_iso_dates, all_filenames, all_sufixes, joint_df=None):
     all_sufixes: list of strings to use in the creation of the columns of the df.  Typically
             AIA wavelengths or the name 'hmi'
     joint_df: pandas dataframe to use as a starting point
+    debug: Whether to use only a small set of the files (10)
 
     Returns
     -------
@@ -96,13 +101,18 @@ def match_file_times(all_iso_dates, all_filenames, all_sufixes, joint_df=None):
     """
 
     for n, (aia_iso_dates, aia_filenames, sufix) in enumerate(zip(all_iso_dates, all_filenames, all_sufixes)):
-        df = create_date_file_df(aia_iso_dates, aia_filenames, sufix)
+        df = create_date_file_df(aia_iso_dates, aia_filenames, sufix, debug=debug)
         if n == 0 and joint_df is None:
             joint_df = df
         else:
             joint_df = joint_df.join(df, how='inner')
 
     return joint_df
+
+
+def get_fits_quality(filepath):
+    s_map = Map(filepath)
+    return s_map.meta["QUALITY"] == 0
 
 
 if __name__ == "__main__":
@@ -123,6 +133,8 @@ if __name__ == "__main__":
                         help='Channels to combine')
     p.add_argument('--dt_round', type=str, default='3min',
                    help='frequency alias to round dates to find closest matches')
+    p.add_argument('--check_fits', action='store_true',
+                   help='whether to verify all fits files for the quality flag')
     p.add_argument('--debug', action='store_true',
                    help='Only process a few files (10)')
 
@@ -132,6 +144,7 @@ if __name__ == "__main__":
     aia_path = args.aia_path
     wavelengths = args.wavelengths
     dt_round = args.dt_round
+    check_fits = args.check_fits
     debug = args.debug
 
     available_wavelengths = [d for d in os.listdir(aia_path) if os.path.isdir(aia_path+'/'+d)]
@@ -147,15 +160,59 @@ if __name__ == "__main__":
     # List of filenames, per wavelength
 
     aia_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(aia_path + '/%s/*aia_%s_*.fits' % (wl, wl)))] for wl in intersection_wavelengths]
-    # load aia dates
-    aia_iso_dates = filenames_to_dates(aia_filenames, debug)
-
-    aia_sufixes = [f'aia{wl}' for wl in intersection_wavelengths]
-    result_matches = match_file_times(aia_iso_dates, aia_filenames, aia_sufixes)
+    if debug:
+        aia_filenames = [files[0:10] for files in aia_filenames]
 
     # Process HMI files, if hmi path provided
     if hmi_path is not None:
         hmi_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(hmi_path + '/*.fits'))]]
+        if debug:
+            hmi_filenames = [files[0:10] for files in hmi_filenames]
+
+    if check_fits:
+        # Assemble list of lists with delayed actions for all files per channel per instrument
+        all_files = []
+        all_files.append(aia_filenames)
+        if hmi_path is not None:
+            all_files.append(hmi_filenames)
+
+        delayed_quality = []
+        for instrument in all_files:
+            channels = []
+            for channel in instrument:
+                files = []
+                for file in channel:
+                    files.append(delayed(get_fits_quality)(file))
+                channels.append(files)
+            delayed_quality.append(channels)
+
+        # Execute delayed actions to identify quality issues
+        with TqdmCallback(desc="Checking quality flag for all files"):
+            quality = dask.compute(*delayed_quality)
+
+        # Remove files with bad quality
+        clean_aia_filenames = []
+        for channel, mask in zip(aia_filenames, quality[0]):
+            clean_channel = [channel[i] for i in range(len(quality)) if mask[i]]
+            clean_aia_filenames.append(clean_channel)
+        aia_filenames = clean_aia_filenames
+
+        if hmi_path is not None:
+            clean_hmi_filenames = []
+            for channel, mask in zip(hmi_filenames, quality[1]):
+                clean_channel = [channel[i] for i in range(len(quality)) if mask[i]]
+                clean_hmi_filenames.append(clean_channel)
+            hmi_filenames = clean_hmi_filenames        
+
+
+    # load aia dates
+    aia_iso_dates = filenames_to_dates(aia_filenames, debug=debug)
+
+    aia_sufixes = [f'aia{wl}' for wl in intersection_wavelengths]
+    result_matches = match_file_times(aia_iso_dates, aia_filenames, aia_sufixes, debug=debug)
+
+    # Process HMI files, if hmi path provided
+    if hmi_path is not None:
         # load hmi dates
         hmi_iso_dates = filenames_to_dates(hmi_filenames, debug)
         result_matches = match_file_times(hmi_iso_dates, hmi_filenames, ['hmi'], joint_df=result_matches)
