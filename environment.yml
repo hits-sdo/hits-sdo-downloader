@@ -1,4 +1,4 @@
-name: hits-downloader
+name: search-preprocess
 channels:
   - conda-forge
 dependencies:
