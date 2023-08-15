@@ -20,7 +20,8 @@ logging.basicConfig(format='%(levelname)-4s '
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
-META_PROPERTIES_TO_KEEP = ['naxis', 'naxis1', 'naxis2', 'bld_vers', 'lvl_num',   # Image properties
+META_PROPERTIES_TO_KEEP = ['telescop', 'instrume', 'waveunit',   # Instrument properties
+                           'naxis', 'naxis1', 'naxis2', 'bld_vers',   # Image properties
                            't_rec', 'origin', 'date', 'telescop', 'instrume', 'date-obs', 't_obs',  # Dates
                            'ctype1', 'cunit1', 'crval1', 'cdelt1', 'crpix1',  # dimension 1 properties
                            'ctype2', 'cunit2', 'crval2', 'cdelt2', 'crpix2',  # dimension 2 properties
@@ -45,6 +46,10 @@ def parse_args():
     p.add_argument('--zarr_outpath', dest='zarr_outpath', type=str,
                    default="/mnt/data_out",
                    help='Zarr out path')
+    p.add_argument('--time_chunk_size', dest='time_chunk_size', type=int, default=1, 
+                   help='Size of chunks in time')
+    p.add_argument('--channel_chunk_size', dest='channel_chunk_size', type=int, default=2, 
+                   help='Size of chunks in channels')        
     p.add_argument('--aia_preprocessing', dest='aia_preprocessing', action='store_true', 
                    help='Whether to pre-process AIA or simply load the image')
     p.add_argument('--aia_calibration', dest='aia_calibration', type=str,
@@ -74,6 +79,8 @@ if __name__ == "__main__":
     aia_path = args.aia_path
     matches = args.matches
     zarr_outpath = args.zarr_outpath
+    time_chunk_size = args.time_chunk_size
+    channel_chunk_size = args.channel_chunk_size
     aia_preprocessing = args.aia_preprocessing
     aia_calibration = args.aia_calibration
     aia_normalization = args.aia_normalization
@@ -127,54 +134,66 @@ if __name__ == "__main__":
     elif len(hmi_columns) > 0:
         dataset_name = 'hmi'
 
+    n_channels = len(aia_columns) + len(hmi_columns)
     sdo_stacks = root.create_dataset(dataset_name, 
-                            shape=(matches.shape[0], len(aia_columns) + len(hmi_columns), resolution, resolution), 
-                            chunks=(1, 2, None, None), 
+                            shape=(matches.shape[0], n_channels, resolution, resolution), 
+                            chunks=(time_chunk_size, channel_chunk_size, None, None), 
                             dtype='f4',
                             compressor=compressor)
 
     # Processing AIA stacks
-    partial_load_map_stack = partial(loadMapStack,
-                            aia_preprocessing=aia_preprocessing,
-                            calibration=aia_calibration,
-                            normalization=aia_normalization,
-                            fix_radius_padding=fix_radius_padding,
-                            resolution=resolution,
-                            remove_nans=remove_nans,
-                            percentile_clip=percentile_clip,
-                            return_meta=True)
+    if len(aia_columns) > 0:
+        partial_load_map_stack = partial(loadMapStack,
+                                aia_preprocessing=aia_preprocessing,
+                                calibration=aia_calibration,
+                                normalization=aia_normalization,
+                                fix_radius_padding=fix_radius_padding,
+                                resolution=resolution,
+                                remove_nans=remove_nans,
+                                percentile_clip=percentile_clip,
+                                return_meta=True)
 
-    for i, file_stack in tqdm(enumerate(aia_files), total=len(aia_files), desc='Processing AIA stacks'):
-        try:
-            # open file
-            aia_stack, aia_meta = partial_load_map_stack(file_stack)
+        for i, file_stack in tqdm(enumerate(aia_files), total=len(aia_files), desc='Processing AIA stacks'):
+            try:
+                # open file
+                aia_stack, aia_meta = partial_load_map_stack(file_stack)
 
-            # Store meta parameters
-            for key in META_PROPERTIES_TO_KEEP:
-                vars()[key].append(aia_meta[key])
+                # Store meta parameters
+                for key in META_PROPERTIES_TO_KEEP:
+                    vars()[key].append(aia_meta[key])
 
-            sdo_stacks[i, 0:len(aia_columns), :, :] = aia_stack
+                sdo_stacks[i, 0:len(aia_columns), :, :] = aia_stack
 
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
 
-    for i, file_stack in tqdm(enumerate(hmi_files), total=len(hmi_files), desc='Processing HMI stacks'):
-        try:
-            # open file
-            hmi_map = loadMap(file_stack[0], resolution=resolution, fix_radius_padding=fix_radius_padding, zero_outside_disk=True)
+    if len(hmi_columns) > 0:
+        for i, file_stack in tqdm(enumerate(hmi_files), total=len(hmi_files), desc='Processing HMI stacks'):
+            try:
+                # open file
+                hmi_map = loadMap(file_stack[0], resolution=resolution, fix_radius_padding=fix_radius_padding, zero_outside_disk=True)
 
-            if remove_nans:
-                hmi_map.data[np.isnan(hmi_map.data)] = 1e-10
-                hmi_map.data[np.isinf(hmi_map.data)] = 1e-10               
+                if remove_nans:
+                    hmi_map.data[np.isnan(hmi_map.data)] = 1e-10
+                    hmi_map.data[np.isinf(hmi_map.data)] = 1e-10               
 
-            sdo_stacks[i, len(aia_columns), :, :] = hmi_map.data
 
-        except Exception as e:
-            print(e)
+                
+                # Store meta parameters
+                if len(aia_columns) == 0:
+                    for key in META_PROPERTIES_TO_KEEP:
+                        if key in hmi_map.meta.keys():
+                            vars()[key].append(hmi_map.meta[key])
+
+                sdo_stacks[i, len(aia_columns), :, :] = hmi_map.data
+
+            except Exception as e:
+                print(e)
 
     # Store header parameters
     for key in META_PROPERTIES_TO_KEEP:
-        sdo_stacks.attrs[key.lower()]=vars()[key]                      
+        if len(vars()[key])>0:
+            sdo_stacks.attrs[key.lower()]=vars()[key]                      
 
     # Set attribute that specifies the dimensions so that xarray can open the zarr
     sdo_stacks.attrs['_ARRAY_DIMENSIONS'] = ['t_obs', 'channel', 'x', 'y']
@@ -187,7 +206,8 @@ if __name__ == "__main__":
                             compressor=None) 
 
     # Convert t_obs to datetime and save it
-    sdo_t_obs[:] = np.array([datetime.strptime(t, '%Y-%m-%dT%H:%M:%S.%f') for t in t_obs])
+
+    sdo_t_obs[:] = np.array([datetime.strptime(t.replace('_TAI','').replace('-','.').replace('T','_'), '%Y.%m.%d_%H:%M:%S.%f') for t in t_obs])
     sdo_t_obs.attrs['_ARRAY_DIMENSIONS'] = ['t_obs']
 
     # Add channels all channels need to have the same number of characters
