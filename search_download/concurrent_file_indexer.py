@@ -126,7 +126,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument('--hmi_path', type=str, default=None,
                    help='path to directory of hmi files')
-    p.add_argument('--aia_path', type=str, default="/mnt/disks/aia-raw",
+    p.add_argument('--aia_path', type=str, default=None,
                    help='path to directory of aia files')    
     p.add_argument('-wl','--wavelengths', type=str,
                         nargs='+', default=None,
@@ -147,21 +147,23 @@ if __name__ == "__main__":
     check_fits = args.check_fits
     debug = args.debug
 
-    available_wavelengths = [d for d in os.listdir(aia_path) if os.path.isdir(aia_path+'/'+d)]
-    intersection_wavelengths = list(set(available_wavelengths).intersection(wavelengths))
-    intersection_wavelengths.sort(key=float)
+    # Process AIA files, if hmi path provided
+    if aia_path is not None:
+        available_wavelengths = [d for d in os.listdir(aia_path) if os.path.isdir(aia_path+'/'+d)]
+        intersection_wavelengths = list(set(available_wavelengths).intersection(wavelengths))
+        intersection_wavelengths.sort(key=float)
 
-    if len(intersection_wavelengths) < len(wavelengths):
-        LOG.log(level=30, msg=f'Found only {available_wavelengths}, but the user request is {wavelengths}')
+        if len(intersection_wavelengths) < len(wavelengths):
+            LOG.log(level=30, msg=f'Found only {available_wavelengths}, but the user request is {wavelengths}')
 
-    nb_wavelengths = len(intersection_wavelengths)
+        nb_wavelengths = len(intersection_wavelengths)
 
-    # LOADING AIA data
-    # List of filenames, per wavelength
+        # LOADING AIA data
+        # List of filenames, per wavelength
 
-    aia_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(aia_path + '/%s/*aia_%s_*.fits' % (wl, wl)))] for wl in intersection_wavelengths]
-    if debug:
-        aia_filenames = [files[0:10] for files in aia_filenames]
+        aia_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(aia_path + '/%s/*aia_%s_*.fits' % (wl, wl)))] for wl in intersection_wavelengths]
+        if debug:
+            aia_filenames = [files[0:10] for files in aia_filenames]
 
     # Process HMI files, if hmi path provided
     if hmi_path is not None:
@@ -172,7 +174,8 @@ if __name__ == "__main__":
     if check_fits:
         # Assemble list of lists with delayed actions for all files per channel per instrument
         all_files = []
-        all_files.append(aia_filenames)
+        if aia_path is not None:
+            all_files.append(aia_filenames)
         if hmi_path is not None:
             all_files.append(hmi_filenames)
 
@@ -191,25 +194,30 @@ if __name__ == "__main__":
             quality = dask.compute(*delayed_quality)
 
         # Remove files with bad quality
-        clean_aia_filenames = []
-        for channel, mask in zip(aia_filenames, quality[0]):
-            clean_channel = [channel[i] for i in range(len(channel)) if mask[i]]
-            clean_aia_filenames.append(clean_channel)
-        aia_filenames = clean_aia_filenames
+        hmi_index = 0
+        if aia_path is not None:
+            hmi_index = 1
+            clean_aia_filenames = []
+            for channel, mask in zip(aia_filenames, quality[0]):
+                clean_channel = [channel[i] for i in range(len(channel)) if mask[i]]
+                clean_aia_filenames.append(clean_channel)
+            aia_filenames = clean_aia_filenames
 
         if hmi_path is not None:
             clean_hmi_filenames = []
-            for channel, mask in zip(hmi_filenames, quality[1]):
+            for channel, mask in zip(hmi_filenames, quality[hmi_index]):
                 clean_channel = [channel[i] for i in range(len(channel)) if mask[i]]
                 clean_hmi_filenames.append(clean_channel)
             hmi_filenames = clean_hmi_filenames        
 
 
     # load aia dates
-    aia_iso_dates = filenames_to_dates(aia_filenames, debug=debug)
+    result_matches = None
+    if aia_path is not None:
+        aia_iso_dates = filenames_to_dates(aia_filenames, debug=debug)
 
-    aia_sufixes = [f'aia{wl}' for wl in intersection_wavelengths]
-    result_matches = match_file_times(aia_iso_dates, aia_filenames, aia_sufixes, debug=debug)
+        aia_sufixes = [f'aia{wl}' for wl in intersection_wavelengths]
+        result_matches = match_file_times(aia_iso_dates, aia_filenames, aia_sufixes, debug=debug)
 
     # Process HMI files, if hmi path provided
     if hmi_path is not None:
@@ -219,10 +227,17 @@ if __name__ == "__main__":
 
 
     # Save csv with aia filenames, aia iso dates, eve iso dates, eve indices, and time deltas
-    if hmi_path is not None:
-        intersection_wavelengths.append('hmi')
-        filename = f'aia_hmi_matches_{"_".join(intersection_wavelengths)}.csv'
-    else:
-        f'aia_matches_{"_".join(intersection_wavelengths)}.csv'
-    filename = os.path.join(aia_path, filename).replace('\\','/')
-    result_matches.to_csv(filename, index=True)
+    if aia_path is not None:
+        if hmi_path is not None:
+            intersection_wavelengths.append('hmi')
+            filename = f'aia_hmi_matches_{"_".join(intersection_wavelengths)}.csv'
+        else:
+            f'aia_matches_{"_".join(intersection_wavelengths)}.csv'
+        filename = os.path.join(aia_path, filename).replace('\\','/')
+        result_matches.to_csv(filename, index=True)
+    elif hmi_path is not None:
+        filename = 'hmi_index.csv'
+        filename = os.path.join(hmi_path, filename).replace('\\','/')
+        result_matches.to_csv(filename, index=True)
+    
+    
