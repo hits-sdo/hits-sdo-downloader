@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     sdo_stacks = root.create_dataset(dataset_name, 
                             shape=(matches.shape[0], len(aia_columns) + len(hmi_columns), resolution, resolution), 
-                            chunks=(1, None, None, None), 
+                            chunks=(1, 2, None, None), 
                             dtype='f4',
                             compressor=compressor)
 
