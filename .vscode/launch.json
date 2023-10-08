@@ -11,7 +11,7 @@
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
       "cwd":"${workspaceFolder}",
-      "justMyCode": true,
+      "justMyCode": false,
       "args": [
         "--aia_path", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion",
         "--matches", "D:/Mis Documentos/AAResearch/SEARCH/hits-sdo-downloader/AIA171_Miniset_MW_expansion/aia_matches_171_211_304.csv",
@@ -38,7 +38,7 @@
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
       "cwd":"${workspaceFolder}",
-      "justMyCode": true,
+      "justMyCode": false,
       "args": [
         "--aia_path", "/d0/euv/aia/raw/2010_2023_1d",
         "--matches", "/d0/euv/aia/raw/2010_2023_1d/aia_hmi_matches_94_131_171_193_211_304_335_hmi.csv",
@@ -49,6 +49,23 @@
         "--aia_normalization", "none",
         "--remove_nans",
         "--debug"
+      ]
+    },
+    {
+      "name": "Zarr to Jpg",
+      "type": "python",
+      "request": "launch",
+      "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
+      "console": "integratedTerminal",
+      "cwd":"${workspaceFolder}",
+      "justMyCode": false,
+      "args": [
+        "--aia_path", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2023_1d_full_ir.zarr",
+        "--stack_outpath", "/d0/euv/aia/preprocessed",
+        // "--wavelength_order", "304", "211", "171",
+        "--wavelength_order", "335", "193", "94",
+        // "--wavelength_order", "211", "193", "171",
+        // "--debug"
       ]
     },
     {
