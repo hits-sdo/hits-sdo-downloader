@@ -56,7 +56,7 @@ def parse_args():
                    default="aiapy",
                    help="calibration mode for AIAPrepEditor")
     p.add_argument('--aia_normalization', dest='aia_normalization', type=str,
-                   default="asinh",
+                   default="linear",
                    help="whether to use 'asinh', 'power', 'linear', or 'none' normalization for aia")    
     p.add_argument('--fix_radius_padding', dest='fix_radius_padding', type=float, default=None, 
                    help='How far from the solar limb to place the edge of the image')

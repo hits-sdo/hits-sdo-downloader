@@ -77,7 +77,7 @@ def loadAIAMap(file_path, calibration="auto", fix_radius_padding=None, resolutio
 
     if fix_radius_padding is not None and resolution is not None:
         s_map = NormalizeRadiusEditor(
-            resolution, padding_factor=fix_radius_padding
+            resolution, padding_factor=fix_radius_padding, fix_irradiance_with_distance=True
         ).call(s_map)
     try:
         s_map = AIAPrepEditor(calibration=calibration).call(s_map)
@@ -151,7 +151,7 @@ def loadMapStack(
     file_paths,
     aia_preprocessing=True,
     calibration="auto",
-    normalization="asinh",
+    normalization="linear",
     fix_radius_padding=None,
     resolution=None,
     remove_nans=True,
