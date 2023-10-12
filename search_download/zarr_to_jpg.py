@@ -12,6 +12,9 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+import zarr
+from numcodecs import Blosc
+
 import xarray as xr
 import dask
 import dask.array as da
@@ -74,9 +77,9 @@ class ZarrToJpg:
         stretch_percentile: float = 40,
         stretch_position: float = 0.4,
     ):
-        assert (
-            len(wavelength_order) == 3
-        ), "Three channels need to be provided to generate jpgs."
+        # assert (
+        #     len(wavelength_order) == 3
+        # ), "Three channels need to be provided to generate jpgs."
         self.aia_path = aia_path
         self.stack_outpath = (
             stack_outpath + "/AIA_" + "_".join([str(wl) for wl in wavelength_order])
@@ -249,6 +252,14 @@ def parse_args():
         help="Path for jpg output",
     )
     p.add_argument(
+        "--out_format",
+        dest="out_format",
+        type=str,
+        default="jpg",
+        help="Whether to save as individual jpgs or zarr",
+    )
+
+    p.add_argument(
         "--wavelength_order",
         dest="wavelength_order",
         type=str,
@@ -314,6 +325,30 @@ def parse_args():
         help="Stretch position to wich the percentile above will be mapped, by default 0.4",
     )
 
+    p.add_argument(
+        "--time_chunk_size",
+        dest="time_chunk_size",
+        type=int,
+        default=1,
+        help="Size of chunks in time",
+    )
+
+    p.add_argument(
+        "--channel_chunk_size",
+        dest="channel_chunk_size",
+        type=int,
+        default=2,
+        help="Size of chunks in channels",
+    )
+
+    p.add_argument(
+        "--space_chunk_size",
+        dest="space_chunk_size",
+        type=int,
+        default=None,
+        help="Size of chunks in spatial dimensions",
+    )    
+
     args = p.parse_args()
     return args
 
@@ -323,6 +358,7 @@ if __name__ == "__main__":
     args = parse_args()
     aia_path = args.aia_path
     stack_outpath = args.stack_outpath
+    out_format = args.out_format
     wavelength_order = args.wavelength_order
     debug = args.debug
     hist_low_lim = args.hist_low_lim
@@ -332,6 +368,9 @@ if __name__ == "__main__":
     vmax_factor = args.vmax_factor
     stretch_percentile = args.stretch_percentile
     stretch_position = args.stretch_position
+    time_chunk_size = args.time_chunk_size
+    channel_chunk_size = args.channel_chunk_size
+    space_chunk_size = args.space_chunk_size
 
     # open zarr
     zarr_to_jpg = ZarrToJpg(
@@ -339,13 +378,71 @@ if __name__ == "__main__":
         stack_outpath=stack_outpath,
         wavelength_order=wavelength_order,
         debug=debug,
-        hist_low_lim = hist_low_lim,
-        hist_high_lim = hist_high_lim,
-        hist_delta = hist_delta,
-        vmax_percentile = vmax_percentile,
-        vmax_factor = vmax_factor,
-        stretch_percentile = stretch_percentile,
-        stretch_position = stretch_position,
+        hist_low_lim=hist_low_lim,
+        hist_high_lim=hist_high_lim,
+        hist_delta=hist_delta,
+        vmax_percentile=vmax_percentile,
+        vmax_factor=vmax_factor,
+        stretch_percentile=stretch_percentile,
+        stretch_position=stretch_position,
     )
 
-    zarr_to_jpg.save_jpgs()
+    if out_format == "jpg":
+        zarr_to_jpg.save_jpgs()
+
+    if out_format == "zarr":
+        zarr_outpath = os.path.join(
+            stack_outpath, aia_path.split("/")[-1].split(".")[0] + "_jpg.zarr"
+        )
+        
+        # Initialize zarr
+        store = zarr.DirectoryStore(zarr_outpath)
+        compressor = Blosc(cname="zstd", clevel=9, shuffle=Blosc.BITSHUFFLE)
+        root = zarr.group(store=store, overwrite=True)
+
+        dataset_name = 'aia_jpg'
+        sdo_stacks = root.create_dataset(
+            dataset_name,
+            shape=zarr_to_jpg.aia_slice.shape,
+            chunks=(time_chunk_size, channel_chunk_size, space_chunk_size, space_chunk_size),
+            dtype="u1",
+            compressor=compressor,
+        )
+
+        for index in tqdm(range(zarr_to_jpg.aia_slice.shape[0]), total=zarr_to_jpg.aia_slice.shape[0], desc='Processing AIA stacks'):
+            aia_stack = zarr_to_jpg.aia_slice[index, :, :, :].load()
+            for i, channel in enumerate(aia_stack.channel):
+                aia_stack.loc[channel, :, :] = zarr_to_jpg.sdo_asinh_norms[str(channel.data)](
+                    aia_stack.loc[channel, :, :]
+                )
+            aia_stack = aia_stack.data*255
+            aia_stack[aia_stack < 0] = 0
+            aia_stack[aia_stack > 255] = 255
+            aia_stack = aia_stack.astype('u1')
+
+            sdo_stacks[index, :, :, :] = aia_stack
+
+        # Set attribute that specifies the dimensions so that xarray can open the zarr
+        sdo_stacks.attrs['_ARRAY_DIMENSIONS'] = ['t_obs', 'channel', 'x', 'y']
+
+        # Create group for t_obs
+        sdo_t_obs = root.create_dataset('t_obs', 
+                                shape=(zarr_to_jpg.aia_slice.shape[0]), 
+                                chunks=(None), 
+                                dtype='M8[ns]',
+                                compressor=None) 
+        sdo_t_obs[:] = zarr_to_jpg.aia_slice.t_obs.data
+        sdo_t_obs.attrs['_ARRAY_DIMENSIONS'] = ['t_obs']
+
+        # Add channels all channels need to have the same number of characters
+        sdo_channels = root.create_dataset('channel', 
+                                shape=zarr_to_jpg.aia_slice.shape[1], 
+                                chunks=(None), 
+                                dtype=str,
+                                compressor=None)
+        sdo_channels[:] = zarr_to_jpg.aia_slice.channel.data
+        sdo_channels.attrs['_ARRAY_DIMENSIONS'] = ['channel']
+        
+
+        zarr.consolidate_metadata(store)           
+                
