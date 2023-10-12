@@ -63,9 +63,12 @@
         "--aia_path", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2023_1d_full_ir.zarr",
         "--stack_outpath", "/d0/euv/aia/preprocessed",
         // "--wavelength_order", "304", "211", "171",
-        "--wavelength_order", "335", "193", "94",
-        // "--wavelength_order", "211", "193", "171",
-        // "--debug"
+        // "--wavelength_order", "335", "193", "94",
+        // "--wavelength_order", "211", "193", "171",        
+        "--wavelength_order", "94", "131", "171", "193", "211", "304", "335",
+        "--debug",
+        "--out_format", "zarr",
+        "--space_chunk_size", "256"
       ]
     },
     {
