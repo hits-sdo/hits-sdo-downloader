@@ -5,6 +5,7 @@ dependencies:
   - sunpy
   - zarr
   - numcodecs
+  - imagecodecs
   - xarray
   - cftime
   - pip
