@@ -48,7 +48,7 @@ def parse_args():
                    help='Zarr out path')
     p.add_argument('--time_chunk_size', dest='time_chunk_size', type=int, default=1, 
                    help='Size of chunks in time')
-    p.add_argument('--channel_chunk_size', dest='channel_chunk_size', type=int, default=2, 
+    p.add_argument('--channel_chunk_size', dest='channel_chunk_size', type=int, default=1, 
                    help='Size of chunks in channels')        
     p.add_argument('--aia_preprocessing', dest='aia_preprocessing', action='store_true', 
                    help='Whether to pre-process AIA or simply load the image')
@@ -64,7 +64,7 @@ def parse_args():
                    help='Target resolution in pixels of 2*(1+fix_radius_padding) solar radii')
     p.add_argument('--remove_nans', action='store_true', 
                    help='change nans and inf for zero')
-    p.add_argument('--percentile_clip', dest='percentile_clip', type=float, default=None, 
+    p.add_argument('--percentile_clip', dest='percentile_clip', type=float, default=0.25, 
                    help='clipping of the hottest pixels to the 100-percentile_clip percentile')
     p.add_argument('--debug', action='store_true',
                    help='Only process a few files (10)')
