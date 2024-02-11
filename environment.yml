@@ -11,4 +11,4 @@ dependencies:
   - pip
   - pip:
     - streamlit
-    - git+https://github.com/RobertJaro/InstrumentToInstrument.git
+    - git+https://github.com/amunozj/InstrumentToInstrument.git
