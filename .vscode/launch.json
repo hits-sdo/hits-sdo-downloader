@@ -6,7 +6,7 @@
   "configurations": [
     {
       "name": "Stack images",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
@@ -33,55 +33,57 @@
     },
     {
       "name": "Fits to Zarr",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
       "cwd":"${workspaceFolder}",
       "justMyCode": false,
       "args": [
-        "--aia_path", "/d0/euv/aia/raw/2010_2023_1d",
-        "--matches", "/d0/euv/aia/raw/2010_2023_1d/aia_hmi_matches_94_131_171_193_211_304_335_hmi.csv",
-        "--zarr_outpath", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2023_1d_small.zarr",
+        "--aia_path", "/d0/euv/aia/raw/2010_2024_1d",
+        "--matches", "/d0/euv/aia/raw/2010_2024_1d/aia_hmi_matches_94_131_171_193_211_304_335_hmi.csv",
+        "--zarr_outpath", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2024_1d_small.zarr",
         "--aia_preprocessing",
         "--fix_radius_padding", "0.25",
         "--resolution", "4096",
-        "--aia_normalization", "none",
+        "--aia_normalization", "linear",
         "--remove_nans",
         "--debug"
       ]
     },
     {
       "name": "Zarr to Jpg",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
       "cwd":"${workspaceFolder}",
       "justMyCode": false,
       "args": [
-        "--aia_path", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2023_1d_full_ir.zarr",
-        "--stack_outpath", "/d0/euv/aia/preprocessed",
-        // "--wavelength_order", "304", "211", "171",
+        "--aia_path", "/d0/euv/aia/preprocessed/aia_hmi_stacks_2010_2024_1d_full.zarr",
+        "--stack_outpath", "/d0/euv/aia/preprocessed_ext",
+        "--wavelength_order", "304", "211", "171",
         // "--wavelength_order", "335", "193", "94",
         // "--wavelength_order", "211", "193", "171",        
-        "--wavelength_order", "94", "131", "171", "193", "211", "304", "335",
-        "--debug",
-        "--out_format", "zarr",
+        // "--wavelength_order", "94", "131", "171", "193", "211", "304", "335",
+        // "--hmi",
+        "--hmi_vmax", "1500",
+        //"--debug",
+        "--out_format", "jpg",
         "--space_chunk_size", "256"
       ]
     },
     {
       "name": "Indexer",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
       "cwd":"${workspaceFolder}",
       "justMyCode": true,
       "args": [
-        "--hmi_path", "/d0/magnetograms/hmi/raw/2010_2023_1d",
-        "--aia_path", "/d0/euv/aia/raw/2010_2023_1d",
+        "--hmi_path", "/d0/magnetograms/hmi/raw/2010_2024_1d",
+        "--aia_path", "/d0/euv/aia/raw/2010_2024_1d",
         "-wl", "94", "131", "171", "193", "211", "304", "335",
         "--dt_round", "3min",
         "--check_fits",
@@ -90,7 +92,7 @@
     },
     {
       "name": "Downloader",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
@@ -98,19 +100,19 @@
       "justMyCode": true,
       "args": [
         "--email", "amunozj@boulder.swri.edu",
-        "-sd", "2010-06-01T00:00:00",
-        "-ed", "2023-03-30T00:00:00",
+        "-sd", "2023-07-14T07:48:08",
+        "-ed", "2024-02-09T07:48:08",
         "-i", "aia",
-        "-wl", "335", "193", "94",
-        "-c", "32d",
+        "-wl", "131", "171", "193", "211", "304", "335", "94",
+        "-c", "1d",
         "-f", "fits",
-        "-p", "/home/amunozj/data/search",
+        "-p", "/d0/euv/aia/raw/2010_2023_1d",
         "-dlim", "30000"
       ]
     },
     {
       "name": "Downloader Test",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
@@ -119,7 +121,7 @@
     },
     {
       "name": "Renamer",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
       "console": "integratedTerminal",
@@ -127,7 +129,7 @@
       "justMyCode": true,
       "args": [
         "-f", "fits",
-        "-p", "/d0/euv/aia/raw/2010_2023_1d",
+        "-p", "/d0/euv/aia/raw/2023_2024_1d",
       ]
     }    
     
