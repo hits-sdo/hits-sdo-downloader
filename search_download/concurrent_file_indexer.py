@@ -26,7 +26,10 @@ def _filename_to_date(data_filename):
     -------
     dt.datetime associated with the file    
     """
-    date_string = re.search(r"\d{8}_\d{6}(?!.+\d{8}_\d{6}.+)", data_filename).group().replace('_', 'T')
+    try:
+        date_string = re.search(r"\d{8}_\d{6}(?!.+\d{8}_\d{6}.+)", data_filename).group().replace('_', 'T')
+    except:
+        date_string = data_filename.split("_")[-1].split('.')[0]
     
     return dt.isoparse(date_string)
 
@@ -161,7 +164,8 @@ if __name__ == "__main__":
         # LOADING AIA data
         # List of filenames, per wavelength
 
-        aia_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(aia_path + '/%s/*aia_%s_*.fits' % (wl, wl)))] for wl in intersection_wavelengths]
+        aia_filenames = [[f.replace('\\', '/') for f in sorted(glob.glob(aia_path + '/%s/*aia*%s_*.fits' % (wl, wl)))] for wl in intersection_wavelengths]
+
         if debug:
             aia_filenames = [files[0:10] for files in aia_filenames]
 
